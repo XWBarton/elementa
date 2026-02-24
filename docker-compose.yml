@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: sqlite:////data/elementa.db
+      SECRET_KEY: changeme_secret_key_please_update
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      FIRST_ADMIN_USERNAME: admin
+      FIRST_ADMIN_PASSWORD: changeme123
+      FIRST_ADMIN_EMAIL: admin@elementa.local
+    volumes:
+      - elementa_data:/data
+    ports:
+      - "8001:8000"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  elementa_data:

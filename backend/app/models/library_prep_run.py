@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from datetime import date, datetime, timezone
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.extraction_run import Extraction
+
+
+class LibraryPrepRun(Base):
+    __tablename__ = "library_prep_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    run_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    operator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    kit: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    target_region: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    primer_f: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    primer_r: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
+    samples: Mapped[list["LibraryPrep"]] = relationship(
+        "LibraryPrep", back_populates="run", cascade="all, delete-orphan"
+    )
+
+
+class LibraryPrep(Base):
+    __tablename__ = "library_preps"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("library_prep_runs.id"), nullable=False)
+    extraction_id: Mapped[Optional[int]] = mapped_column(ForeignKey("extractions.id"), nullable=True)
+    specimen_code: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    index_i7: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    index_i5: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    input_ng: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    average_fragment_size_bp: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    library_concentration_ng_ul: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sample_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    run: Mapped["LibraryPrepRun"] = relationship("LibraryPrepRun", back_populates="samples")
+    extraction: Mapped[Optional["Extraction"]] = relationship("Extraction", foreign_keys=[extraction_id])
+    ngs_run_libraries = relationship("NGSRunLibrary", back_populates="library_prep", cascade="all, delete-orphan")

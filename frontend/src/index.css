@@ -1,0 +1,25 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Lora', Georgia, 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3,
+.ant-typography h1,
+.ant-typography h2,
+.ant-typography h3,
+.ant-page-header-heading-title {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  letter-spacing: -0.01em;
+}
+
+.ant-menu-item,
+.ant-menu-title-content {
+  font-family: 'Lora', Georgia, serif;
+}
+
+.brand-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
