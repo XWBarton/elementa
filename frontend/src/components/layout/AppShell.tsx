@@ -27,7 +27,7 @@ const menuItems = [
   { key: '/export', icon: <DownloadOutlined />, label: 'Export' },
 ]
 
-const adminItem = { key: '/admin', icon: <SettingOutlined />, label: 'Admin' }
+const adminItem = { key: '/admin', icon: <SettingOutlined />, label: 'Settings' }
 
 export default function AppShell() {
   const navigate = useNavigate()

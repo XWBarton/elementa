@@ -131,7 +131,7 @@ function UsersTab() {
 export default function AdminPage() {
   return (
     <div>
-      <Typography.Title level={3}>Admin</Typography.Title>
+      <Typography.Title level={3}>Settings</Typography.Title>
       <Tabs items={[{ key: 'users', label: 'Users', children: <UsersTab /> }]} />
     </div>
   )
