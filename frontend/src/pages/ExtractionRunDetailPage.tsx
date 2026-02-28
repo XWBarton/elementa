@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   Descriptions,
@@ -15,7 +16,7 @@ import {
   message,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import {
   useAddExtractionSample,
@@ -27,11 +28,14 @@ import {
 } from '../hooks/useExtractionRuns'
 import { Extraction, ExtractionCreate, ExtractionUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
+import ContainerView, { nextPosition } from '../components/ContainerView'
 
 export default function ExtractionRunDetailPage() {
   const { id } = useParams()
   const runId = Number(id)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const specimenParam = searchParams.get('specimen')
   const { user } = useAuth()
 
   const { data: run, isLoading } = useExtractionRun(runId)
@@ -47,7 +51,19 @@ export default function ExtractionRunDetailPage() {
   const [editForm] = Form.useForm()
   const [bulkText, setBulkText] = useState('')
 
-  if (isLoading || !run) return <Typography.Text>Loading...</Typography.Text>
+  if (isLoading) return <Typography.Text>Loading...</Typography.Text>
+  if (!run) return (
+    <div>
+      <Typography.Text type="secondary">Extraction run not found.</Typography.Text>
+      <br />
+      <Button type="link" style={{ paddingLeft: 0 }} onClick={() => navigate('/extraction-runs/new')}>
+        Create a new extraction run
+      </Button>
+    </div>
+  )
+
+  const samples = run.samples ?? []
+  const containerType = run.container_type
 
   const handleAddSingle = async (values: ExtractionCreate) => {
     await addSample.mutateAsync(values)
@@ -83,7 +99,40 @@ export default function ExtractionRunDetailPage() {
     navigate('/extraction-runs')
   }
 
+  const openAdd = () => {
+    if (containerType) {
+      const suggested = nextPosition(containerType, samples)
+      if (suggested) addForm.setFieldValue('position', suggested)
+    }
+    setAddModalOpen(true)
+  }
+
+  // Sort samples by position when a container type is set
+  const sortedSamples = containerType
+    ? [...samples].sort((a, b) => {
+        if (!a.position && !b.position) return 0
+        if (!a.position) return 1
+        if (!b.position) return -1
+        return a.position.localeCompare(b.position, undefined, { numeric: true, sensitivity: 'base' })
+      })
+    : samples
+
+  const positionField = (
+    <Form.Item label="Position" name="position" extra={
+      containerType ? `e.g. ${containerType.includes('plate') ? 'A1, B3, H12' : '1, 2, 12'}` : undefined
+    }>
+      <Input placeholder={containerType ? (containerType.includes('plate') ? 'A1' : '1') : 'e.g. A1 or 12'} style={{ width: 120 }} />
+    </Form.Item>
+  )
+
   const sampleColumns = [
+    ...(containerType ? [{
+      title: 'Position',
+      dataIndex: 'position',
+      key: 'position',
+      width: 80,
+      render: (v: string) => v ? <Tag color="purple">{v}</Tag> : '—',
+    }] : []),
     { title: 'Specimen Code', dataIndex: 'specimen_code', key: 'specimen_code', render: (v: string) => <Tag color="blue">{v}</Tag> },
     { title: 'Yield (ng/µl)', dataIndex: 'yield_ng_ul', key: 'yield_ng_ul', render: (v: number) => v ?? '—' },
     { title: 'A260/280', dataIndex: 'a260_280', key: 'a260_280', render: (v: number) => v ?? '—' },
@@ -133,6 +182,7 @@ export default function ExtractionRunDetailPage() {
           <Descriptions.Item label="Operator">{run.operator?.username ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Kit">{run.kit ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Type">{run.extraction_type ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label="Container">{run.container_type ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Elution Volume">{run.elution_volume_ul ? `${run.elution_volume_ul} µl` : '—'}</Descriptions.Item>
           <Descriptions.Item label="Samples"><Tag color="blue">{run.sample_count}</Tag></Descriptions.Item>
           {run.protocol_notes && <Descriptions.Item label="Protocol Notes" span={2}>{run.protocol_notes}</Descriptions.Item>}
@@ -140,20 +190,51 @@ export default function ExtractionRunDetailPage() {
         </Descriptions>
       </Card>
 
+      {specimenParam && (
+        <Alert
+          message={`Linked from Tessera — specimen ${specimenParam}`}
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {/* Container visualisation */}
+      {containerType && (
+        <Card title={`${containerType} layout`} style={{ marginBottom: 16 }}>
+          <ContainerView
+            containerType={containerType}
+            samples={samples}
+            highlightCode={specimenParam ?? undefined}
+            onWellClick={(sample) => {
+              if (sample) {
+                setEditSample(sample)
+                editForm.setFieldsValue(sample)
+              } else {
+                openAdd()
+              }
+            }}
+          />
+        </Card>
+      )}
+
       <Card
         title="Samples"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
             Add Sample
           </Button>
         }
       >
         <Table
-          dataSource={run.samples ?? []}
+          dataSource={sortedSamples}
           columns={sampleColumns}
           rowKey="id"
           size="small"
           pagination={{ pageSize: 20 }}
+          onRow={(record) => ({
+            style: record.specimen_code === specimenParam ? { background: '#e6f7ff' } : {},
+          })}
         />
       </Card>
 
@@ -175,6 +256,7 @@ export default function ExtractionRunDetailPage() {
                   <Form.Item label="Specimen Code" name="specimen_code" rules={[{ required: true }]}>
                     <Input placeholder="e.g. AMPH2024-001" />
                   </Form.Item>
+                  {positionField}
                   <Form.Item label="Input Quantity" name="input_quantity">
                     <InputNumber style={{ width: '100%' }} />
                   </Form.Item>
@@ -210,7 +292,7 @@ export default function ExtractionRunDetailPage() {
               label: 'Bulk Paste',
               children: (
                 <div>
-                  <Typography.Text type="secondary">Paste specimen codes — one per line</Typography.Text>
+                  <Typography.Text type="secondary">Paste specimen codes — one per line. Positions will be auto-assigned in order.</Typography.Text>
                   <Input.TextArea
                     rows={8}
                     value={bulkText}
@@ -240,6 +322,7 @@ export default function ExtractionRunDetailPage() {
           <Form.Item label="Specimen Code" name="specimen_code" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
+          {positionField}
           <Form.Item label="Input Quantity" name="input_quantity">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>

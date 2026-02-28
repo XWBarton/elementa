@@ -19,6 +19,7 @@ export interface Extraction {
   id: number
   run_id: number
   specimen_code: string
+  position?: string
   input_quantity?: number
   input_quantity_unit?: string
   yield_ng_ul?: number
@@ -31,6 +32,7 @@ export interface Extraction {
 
 export interface ExtractionCreate {
   specimen_code: string
+  position?: string
   input_quantity?: number
   input_quantity_unit?: string
   yield_ng_ul?: number
@@ -50,6 +52,7 @@ export interface ExtractionRun {
   operator?: User
   kit?: string
   extraction_type?: ExtractionType
+  container_type?: string
   elution_volume_ul?: number
   protocol_notes?: string
   notes?: string
@@ -63,6 +66,7 @@ export interface ExtractionRunCreate {
   operator_id?: number
   kit?: string
   extraction_type?: ExtractionType
+  container_type?: string
   elution_volume_ul?: number
   protocol_notes?: string
   notes?: string

@@ -11,12 +11,12 @@ services:
     volumes:
       - elementa_data:/data
     ports:
-      - "8001:8000"
+      - "8232:8000"
 
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "8231:80"
     depends_on:
       - backend
 

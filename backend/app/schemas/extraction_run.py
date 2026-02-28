@@ -8,6 +8,7 @@ from app.schemas.user import UserRead
 
 class ExtractionCreate(BaseModel):
     specimen_code: str
+    position: Optional[str] = None
     input_quantity: Optional[float] = None
     input_quantity_unit: Optional[str] = None
     yield_ng_ul: Optional[float] = None
@@ -20,6 +21,7 @@ class ExtractionCreate(BaseModel):
 
 class ExtractionUpdate(BaseModel):
     specimen_code: Optional[str] = None
+    position: Optional[str] = None
     input_quantity: Optional[float] = None
     input_quantity_unit: Optional[str] = None
     yield_ng_ul: Optional[float] = None
@@ -34,6 +36,7 @@ class ExtractionRead(BaseModel):
     id: int
     run_id: int
     specimen_code: str
+    position: Optional[str] = None
     input_quantity: Optional[float] = None
     input_quantity_unit: Optional[str] = None
     yield_ng_ul: Optional[float] = None
@@ -52,6 +55,7 @@ class ExtractionRunCreate(BaseModel):
     operator_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
+    container_type: Optional[str] = None
     elution_volume_ul: Optional[float] = None
     protocol_notes: Optional[str] = None
     notes: Optional[str] = None
@@ -62,6 +66,7 @@ class ExtractionRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
+    container_type: Optional[str] = None
     elution_volume_ul: Optional[float] = None
     protocol_notes: Optional[str] = None
     notes: Optional[str] = None
@@ -74,6 +79,7 @@ class ExtractionRunRead(BaseModel):
     operator: Optional[UserRead] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
+    container_type: Optional[str] = None
     elution_volume_ul: Optional[float] = None
     protocol_notes: Optional[str] = None
     notes: Optional[str] = None

@@ -18,7 +18,12 @@ export function useExtractionRuns(params?: Parameters<typeof getExtractionRuns>[
 }
 
 export function useExtractionRun(id: number) {
-  return useQuery({ queryKey: ['extraction_runs', id], queryFn: () => getExtractionRun(id), enabled: !!id })
+  return useQuery({
+    queryKey: ['extraction_runs', id],
+    queryFn: () => getExtractionRun(id),
+    enabled: !!id,
+    retry: (failureCount, error: any) => error?.response?.status === 404 ? false : failureCount < 3,
+  })
 }
 
 export function useAllExtractions() {

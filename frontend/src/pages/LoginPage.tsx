@@ -10,6 +10,7 @@ export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [form] = Form.useForm()
 
   async function onFinish({ username, password }: { username: string; password: string }) {
     setLoading(true)
@@ -50,12 +51,12 @@ export default function LoginPage() {
             Sample Tracking
           </Text>
         </div>
-        <Form layout="vertical" onFinish={onFinish} size="large">
+        <Form form={form} layout="vertical" onFinish={onFinish} size="large">
           <Form.Item name="username" rules={[{ required: true, message: 'Username required' }]}>
-            <Input prefix={<UserOutlined />} placeholder="Username" autoFocus />
+            <Input prefix={<UserOutlined />} placeholder="Username" autoFocus onPressEnter={() => form.submit()} />
           </Form.Item>
           <Form.Item name="password" rules={[{ required: true, message: 'Password required' }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+            <Input.Password prefix={<LockOutlined />} placeholder="Password" onPressEnter={() => form.submit()} />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" loading={loading} block>

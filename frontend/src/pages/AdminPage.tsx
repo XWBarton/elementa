@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Space, Switch, Table, Tabs, Typography, message } from 'antd'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useUsers, useCreateUser, useUpdateUser, useHardDeleteUser } from '../hooks/useUsers'
+import { Button, Form, Input, Modal, Space, Switch, Table, Tabs, Typography, message } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { useUsers, useCreateUser, useUpdateUser } from '../hooks/useUsers'
 import { useAuth } from '../context/AuthContext'
 import { User } from '../types'
 
@@ -10,7 +10,6 @@ function UsersTab() {
   const { data, isLoading } = useUsers()
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
-  const hardDelete = useHardDeleteUser()
   const [creating, setCreating] = useState(false)
   const [form] = Form.useForm()
 
@@ -61,34 +60,6 @@ function UsersTab() {
       ),
     },
     { title: 'Created', dataIndex: 'created_at', key: 'created_at', render: (v: string) => v?.slice(0, 10) },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: unknown, row: User) => (
-        <Popconfirm
-          title={`Permanently delete ${row.username}?`}
-          description="This cannot be undone. The user will be removed from the database."
-          okText="Delete"
-          okButtonProps={{ danger: true }}
-          disabled={row.id === currentUser?.id}
-          onConfirm={() =>
-            hardDelete
-              .mutateAsync(row.id)
-              .then(() => message.success('User deleted'))
-              .catch(() => message.error('Failed to delete user'))
-          }
-        >
-          <Button
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            disabled={row.id === currentUser?.id}
-          >
-            Delete
-          </Button>
-        </Popconfirm>
-      ),
-    },
   ]
 
   return (

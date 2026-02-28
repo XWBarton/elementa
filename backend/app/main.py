@@ -17,6 +17,22 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
 
+def migrate_db():
+    """Add columns introduced after initial schema without wiping the DB."""
+    from sqlalchemy import text
+    migrations = [
+        ("extraction_runs", "container_type", "ALTER TABLE extraction_runs ADD COLUMN container_type VARCHAR(50)"),
+        ("extractions", "position", "ALTER TABLE extractions ADD COLUMN position VARCHAR(10)"),
+    ]
+    with engine.connect() as conn:
+        for table, column, sql in migrations:
+            rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            existing = [r[1] for r in rows]
+            if column not in existing:
+                conn.execute(text(sql))
+        conn.commit()
+
+
 def seed_admin():
     from app.models.user import User
     from app.security import hash_password
@@ -41,6 +57,7 @@ def seed_admin():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    migrate_db()
     seed_admin()
     yield
 
