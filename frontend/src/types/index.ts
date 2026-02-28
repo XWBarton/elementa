@@ -1,4 +1,46 @@
+// ── Protocols ────────────────────────────────────────────────────
+
+export type ProtocolCategory = 'extraction' | 'pcr' | 'sanger' | 'library_prep' | 'ngs' | 'general'
+
+export interface ProtocolStep {
+  order: number
+  title: string
+  description?: string
+  duration_min?: number
+  temp_c?: number
+  rpm?: number
+}
+
+export interface Protocol {
+  id: number
+  name: string
+  category?: ProtocolCategory
+  version?: string
+  description?: string
+  steps?: ProtocolStep[]
+  materials?: string[]
+  notes?: string
+  created_by_id?: number
+  created_by?: User
+  created_at: string
+}
+
+export interface ProtocolCreate {
+  name: string
+  category?: ProtocolCategory
+  version?: string
+  description?: string
+  steps?: ProtocolStep[]
+  materials?: string[]
+  notes?: string
+}
+
+export interface ProtocolUpdate extends Partial<ProtocolCreate> {}
+
+// ── Lab Workflows ─────────────────────────────────────────────────
+
 export type ExtractionType = 'DNA' | 'RNA' | 'Total Nucleic Acid'
+export type SampleType = 'specimen' | 'positive_control' | 'extraction_blank' | 'ntc'
 export type GelResult = 'pass' | 'fail' | 'weak' | 'multiple_bands'
 export type NGSPlatform = 'Illumina' | 'ONT' | 'PacBio' | 'Other'
 export type SangerDirection = 'forward' | 'reverse' | 'both'
@@ -10,6 +52,7 @@ export interface User {
   email?: string
   is_admin: boolean
   is_active: boolean
+  avatar_filename?: string
   created_at: string
 }
 
@@ -28,6 +71,8 @@ export interface Extraction {
   rin_score?: number
   storage_location?: string
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface ExtractionCreate {
@@ -41,6 +86,8 @@ export interface ExtractionCreate {
   rin_score?: number
   storage_location?: string
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface ExtractionUpdate extends Partial<ExtractionCreate> {}
@@ -50,6 +97,8 @@ export interface ExtractionRun {
   run_date?: string
   operator_id?: number
   operator?: User
+  protocol_id?: number
+  protocol?: Protocol
   kit?: string
   extraction_type?: ExtractionType
   container_type?: string
@@ -64,6 +113,7 @@ export interface ExtractionRun {
 export interface ExtractionRunCreate {
   run_date?: string
   operator_id?: number
+  protocol_id?: number
   kit?: string
   extraction_type?: ExtractionType
   container_type?: string
@@ -84,6 +134,8 @@ export interface PCRSample {
   specimen_code?: string
   gel_result?: GelResult
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface PCRSampleCreate {
@@ -91,6 +143,8 @@ export interface PCRSampleCreate {
   specimen_code?: string
   gel_result?: GelResult
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface PCRSampleUpdate extends Partial<PCRSampleCreate> {}
@@ -100,6 +154,8 @@ export interface PCRRun {
   run_date?: string
   operator_id?: number
   operator?: User
+  protocol_id?: number
+  protocol?: Protocol
   target_region?: string
   primer_f?: string
   primer_r?: string
@@ -116,6 +172,7 @@ export interface PCRRun {
 export interface PCRRunCreate {
   run_date?: string
   operator_id?: number
+  protocol_id?: number
   target_region?: string
   primer_f?: string
   primer_r?: string
@@ -140,6 +197,8 @@ export interface SangerSample {
   output_file_path?: string
   quality_notes?: string
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface SangerSampleCreate {
@@ -149,6 +208,8 @@ export interface SangerSampleCreate {
   output_file_path?: string
   quality_notes?: string
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface SangerSampleUpdate extends Partial<SangerSampleCreate> {}
@@ -158,6 +219,8 @@ export interface SangerRun {
   run_date?: string
   operator_id?: number
   operator?: User
+  protocol_id?: number
+  protocol?: Protocol
   primer?: string
   direction?: SangerDirection
   service_provider?: string
@@ -171,6 +234,7 @@ export interface SangerRun {
 export interface SangerRunCreate {
   run_date?: string
   operator_id?: number
+  protocol_id?: number
   primer?: string
   direction?: SangerDirection
   service_provider?: string
@@ -195,6 +259,8 @@ export interface LibraryPrep {
   library_concentration_ng_ul?: number
   sample_name?: string
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface LibraryPrepCreate {
@@ -207,6 +273,8 @@ export interface LibraryPrepCreate {
   library_concentration_ng_ul?: number
   sample_name?: string
   notes?: string
+  qc_status?: string
+  sample_type?: SampleType
 }
 
 export interface LibraryPrepUpdate extends Partial<LibraryPrepCreate> {}
@@ -216,6 +284,8 @@ export interface LibraryPrepRun {
   run_date?: string
   operator_id?: number
   operator?: User
+  protocol_id?: number
+  protocol?: Protocol
   kit?: string
   target_region?: string
   primer_f?: string
@@ -229,6 +299,7 @@ export interface LibraryPrepRun {
 export interface LibraryPrepRunCreate {
   run_date?: string
   operator_id?: number
+  protocol_id?: number
   kit?: string
   target_region?: string
   primer_f?: string
@@ -257,6 +328,8 @@ export interface NGSRun {
   date?: string
   operator_id?: number
   operator?: User
+  protocol_id?: number
+  protocol?: Protocol
   flow_cell_id?: string
   reagent_kit?: string
   output_path?: string
@@ -274,6 +347,7 @@ export interface NGSRunCreate {
   run_id?: string
   date?: string
   operator_id?: number
+  protocol_id?: number
   flow_cell_id?: string
   reagent_kit?: string
   output_path?: string

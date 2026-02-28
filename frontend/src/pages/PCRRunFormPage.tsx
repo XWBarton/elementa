@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useCreatePCRRun, usePCRRun, useUpdatePCRRun } from '../hooks/usePCRRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useAllProtocols } from '../hooks/useProtocols'
 import { PCRRunCreate } from '../types'
 
 export default function PCRRunFormPage() {
@@ -14,6 +15,7 @@ export default function PCRRunFormPage() {
 
   const { data: run } = usePCRRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
+  const { data: protocols } = useAllProtocols()
   const createRun = useCreatePCRRun()
   const updateRun = useUpdatePCRRun()
 
@@ -47,6 +49,18 @@ export default function PCRRunFormPage() {
           <Form.Item label="Operator" name="operator_id">
             <Select allowClear placeholder="Select operator"
               options={usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []} />
+          </Form.Item>
+          <Form.Item label="Protocol (SOP)" name="protocol_id">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select protocol (optional)"
+              options={protocols?.map(p => ({
+                label: `${p.name}${p.version ? ` ${p.version}` : ''}${p.category ? ` [${p.category}]` : ''}`,
+                value: p.id,
+              })) ?? []}
+            />
           </Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. 16S rRNA" /></Form.Item>
           <Form.Item label="Forward Primer" name="primer_f"><Input placeholder="Primer F sequence or name" /></Form.Item>

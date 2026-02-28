@@ -1,4 +1,7 @@
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.crud import library_prep_run as crud
@@ -100,3 +103,25 @@ def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=
         raise HTTPException(status_code=404, detail="Sample not found")
     crud.delete_sample(db, sample)
     return {"detail": "Deleted"}
+
+
+@router.get("/{run_id}/export")
+def export_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    obj = crud.get_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Library prep run not found")
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["run_id", "run_date", "kit", "target_region", "primer_f", "primer_r",
+                "specimen_code", "sample_name", "extraction_id",
+                "index_i7", "index_i5", "input_ng", "average_fragment_size_bp",
+                "library_concentration_ng_ul", "qc_status", "notes"])
+    for s in obj.samples:
+        code = s.specimen_code or (s.extraction.specimen_code if s.extraction else "")
+        w.writerow([obj.id, obj.run_date, obj.kit, obj.target_region, obj.primer_f, obj.primer_r,
+                    code, s.sample_name, s.extraction_id,
+                    s.index_i7, s.index_i5, s.input_ng, s.average_fragment_size_bp,
+                    s.library_concentration_ng_ul, s.qc_status, s.notes])
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="library-prep-run-{run_id}.csv"'})

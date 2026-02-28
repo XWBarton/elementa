@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Button, Form, Input, Modal, Space, Switch, Table, Tabs, Typography, message } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { useState, useEffect } from 'react'
+import { Alert, Button, Form, Input, Modal, Space, Switch, Table, Tabs, Typography, message } from 'antd'
+import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import { useUsers, useCreateUser, useUpdateUser } from '../hooks/useUsers'
 import { useAuth } from '../context/AuthContext'
 import { User } from '../types'
+import { getSettings, saveSetting, testTessera } from '../api/admin'
+import { useQuery } from '@tanstack/react-query'
 
 function UsersTab() {
   const { user: currentUser } = useAuth()
@@ -99,11 +101,121 @@ function UsersTab() {
   )
 }
 
+function IntegrationsTab() {
+  const { data: settings, refetch } = useQuery({ queryKey: ['tessera-settings'], queryFn: getSettings })
+  const [url, setUrl] = useState('')
+  const [token, setToken] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testStatus, setTestStatus] = useState<'ok' | 'error' | null>(null)
+  const [testMsg, setTestMsg] = useState('')
+
+  useEffect(() => {
+    if (settings) {
+      setUrl(settings.tessera_url || '')
+    }
+  }, [settings])
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await saveSetting('tessera_url', url)
+      if (token) await saveSetting('tessera_api_token', token)
+      message.success('Settings saved')
+      setToken('')
+      refetch()
+    } catch {
+      message.error('Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleTest() {
+    setTesting(true)
+    setTestStatus(null)
+    try {
+      await testTessera(url, token || undefined)
+      setTestStatus('ok')
+      setTestMsg('Connection successful')
+    } catch (e: any) {
+      setTestStatus('error')
+      setTestMsg(e?.response?.data?.detail || 'Connection failed')
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
+        Connect to a <strong>Tessera</strong> instance to search specimens when adding samples.
+        Generate the API token from Tessera's Settings → Integrations tab.
+      </Typography.Paragraph>
+      <Form layout="vertical">
+        <Form.Item label="Tessera URL">
+          <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="http://tessera:8000" />
+        </Form.Item>
+        <Form.Item
+          label="API Token"
+          extra={settings?.tessera_token_set ? 'A token is currently set. Paste a new one to replace it.' : undefined}
+        >
+          <Input.Password
+            value={token}
+            onChange={e => setToken(e.target.value)}
+            placeholder={settings?.tessera_token_set ? '••••••••' : 'Paste API token from Tessera'}
+          />
+        </Form.Item>
+        <Space>
+          <Button type="primary" loading={saving} onClick={handleSave}>Save</Button>
+          <Button
+            loading={testing}
+            onClick={handleTest}
+            icon={testStatus === 'ok' ? <CheckCircleOutlined /> : testStatus === 'error' ? <CloseCircleOutlined /> : undefined}
+          >
+            Test Connection
+          </Button>
+        </Space>
+        {testStatus && (
+          <Alert
+            style={{ marginTop: 12 }}
+            type={testStatus === 'ok' ? 'success' : 'error'}
+            message={testMsg}
+            showIcon
+          />
+        )}
+      </Form>
+    </div>
+  )
+}
+
+function AboutTab() {
+  return (
+    <div style={{ maxWidth: 540, paddingTop: 8 }}>
+      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <img src="/elementa-logo.png" alt="Elementa" style={{ height: 56, objectFit: 'contain' }} />
+        <div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: '#1677ff', lineHeight: 1.2 }}>Elementa</div>
+          <div style={{ fontSize: 13, color: '#888' }}>Version 1.0</div>
+        </div>
+      </div>
+      <Typography.Paragraph style={{ fontStyle: 'italic', color: '#555', borderLeft: '3px solid #e0e0e0', paddingLeft: 12, marginBottom: 24 }}>
+        Elementa — refers to basic principles, components, constituents, or foundations.
+      </Typography.Paragraph>
+      <Typography.Text type="secondary">Created by Xavier Barton</Typography.Text>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   return (
     <div>
       <Typography.Title level={3}>Settings</Typography.Title>
-      <Tabs items={[{ key: 'users', label: 'Users', children: <UsersTab /> }]} />
+      <Tabs items={[
+        { key: 'users', label: 'Users', children: <UsersTab /> },
+        { key: 'integrations', label: 'Integrations', children: <IntegrationsTab /> },
+        { key: 'about', label: 'About', children: <AboutTab /> },
+      ]} />
     </div>
   )
 }

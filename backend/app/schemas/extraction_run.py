@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from app.schemas.user import UserRead
+from app.schemas.protocol import ProtocolRead
 
 
 class ExtractionCreate(BaseModel):
@@ -16,6 +17,8 @@ class ExtractionCreate(BaseModel):
     a260_230: Optional[float] = None
     rin_score: Optional[float] = None
     storage_location: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -29,6 +32,8 @@ class ExtractionUpdate(BaseModel):
     a260_230: Optional[float] = None
     rin_score: Optional[float] = None
     storage_location: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -44,6 +49,8 @@ class ExtractionRead(BaseModel):
     a260_230: Optional[float] = None
     rin_score: Optional[float] = None
     storage_location: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
     class Config:
@@ -53,6 +60,7 @@ class ExtractionRead(BaseModel):
 class ExtractionRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None
@@ -64,6 +72,7 @@ class ExtractionRunCreate(BaseModel):
 class ExtractionRunUpdate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None
@@ -77,6 +86,8 @@ class ExtractionRunRead(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     operator: Optional[UserRead] = None
+    protocol_id: Optional[int] = None
+    protocol: Optional[ProtocolRead] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None

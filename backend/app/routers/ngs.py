@@ -1,7 +1,10 @@
+import csv
+import io
 from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.crud.ngs_run import (
@@ -55,3 +58,25 @@ def delete(run_id: int, db: Session = Depends(get_db), _=Depends(require_admin))
         raise HTTPException(status_code=404, detail="NGS run not found")
     delete_ngs_run(db, obj)
     return {"detail": "Deleted"}
+
+
+@router.get("/{run_id}/export")
+def export_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    obj = get_ngs_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="NGS run not found")
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["run_id", "platform", "instrument", "date", "flow_cell_id", "reagent_kit",
+                "total_reads", "q30_percent", "mean_read_length_bp",
+                "specimen_code", "sample_name", "library_prep_id",
+                "reads_millions", "qc_status"])
+    for lib in obj.libraries:
+        code = lib.specimen_code or (lib.library_prep.specimen_code if lib.library_prep else "")
+        w.writerow([obj.id, obj.platform, obj.instrument, obj.date, obj.flow_cell_id, obj.reagent_kit,
+                    obj.total_reads, obj.q30_percent, obj.mean_read_length_bp,
+                    code, lib.sample_name, lib.library_prep_id,
+                    lib.reads_millions, lib.qc_status])
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="ngs-run-{run_id}.csv"'})

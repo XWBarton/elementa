@@ -1,7 +1,7 @@
 import {
   Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import {
@@ -14,6 +14,10 @@ import {
 import { useAllExtractions } from '../hooks/useExtractionRuns'
 import { Extraction, LibraryPrep, LibraryPrepCreate, LibraryPrepUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
+import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
+import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
+import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
+import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
 
 export default function LibraryPrepRunDetailPage() {
   const { id } = useParams()
@@ -63,9 +67,30 @@ export default function LibraryPrepRunDetailPage() {
     }
   }
 
+  const handleExport = async () => {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`/api/library-prep-runs/${run.id}/export`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `library-prep-run-${run.id}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const columns = [
     {
-      title: 'Specimen Code',
+      title: 'Type',
+      dataIndex: 'sample_type',
+      key: 'sample_type',
+      width: 140,
+      render: (v: string) => <SampleTypeTag type={v} />,
+    },
+    {
+      title: 'Sample Code',
       key: 'specimen',
       render: (_: unknown, r: LibraryPrep) => {
         const code = r.specimen_code ?? r.extraction?.specimen_code
@@ -78,6 +103,7 @@ export default function LibraryPrepRunDetailPage() {
     { title: 'Input (ng)', dataIndex: 'input_ng', key: 'input_ng', render: (v: number) => v ?? '—' },
     { title: 'Conc. (ng/µl)', dataIndex: 'library_concentration_ng_ul', key: 'library_concentration_ng_ul', render: (v: number) => v ?? '—' },
     { title: 'Avg Size (bp)', dataIndex: 'average_fragment_size_bp', key: 'average_fragment_size_bp', render: (v: number) => v ?? '—' },
+    { title: 'QC', dataIndex: 'qc_status', key: 'qc_status', render: (v: string) => <QcStatusTag status={v} /> },
     {
       title: 'Actions',
       key: 'actions',
@@ -94,7 +120,10 @@ export default function LibraryPrepRunDetailPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const PrepForm = ({ form, loading, onFinish }: { form: any; loading: boolean; onFinish: (v: LibraryPrepCreate) => void }) => (
-    <Form form={form} layout="vertical" onFinish={onFinish}>
+    <Form form={form} layout="vertical" onFinish={onFinish} onValuesChange={(c) => { if (c.sample_type === 'ntc') form.setFieldValue('specimen_code', 'NTC'); if (c.sample_type === 'extraction_blank') form.setFieldValue('specimen_code', 'EXB') }}>
+      <Form.Item label="Sample Type" name="sample_type">
+        <SampleTypeSelect />
+      </Form.Item>
       <Form.Item label="Extraction (optional — link to DB record)" name="extraction_id">
         <Select
           allowClear
@@ -105,8 +134,8 @@ export default function LibraryPrepRunDetailPage() {
           onChange={onExtractionChange(form)}
         />
       </Form.Item>
-      <Form.Item label="Specimen Code" name="specimen_code" extra="Auto-filled when extraction is selected; edit freely for pre-database specimens">
-        <Input placeholder="e.g. AMPH2024-042" />
+      <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled when extraction is selected; edit freely for pre-database specimens">
+        <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-042" />
       </Form.Item>
       <Form.Item label="Sample Name" name="sample_name"><Input placeholder="Library sample name" /></Form.Item>
       <Form.Item label="Index i7" name="index_i7"><Input placeholder="e.g. N701" /></Form.Item>
@@ -115,6 +144,9 @@ export default function LibraryPrepRunDetailPage() {
       <Form.Item label="Avg. Fragment Size (bp)" name="average_fragment_size_bp"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
       <Form.Item label="Library Concentration (ng/µl)" name="library_concentration_ng_ul">
         <InputNumber min={0} step={0.01} style={{ width: '100%' }} />
+      </Form.Item>
+      <Form.Item name="qc_status" label="QC Status">
+        <QcStatusSelect />
       </Form.Item>
       <Form.Item label="Notes" name="notes"><Input /></Form.Item>
       <Form.Item>
@@ -128,6 +160,7 @@ export default function LibraryPrepRunDetailPage() {
       <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <Typography.Title level={3} style={{ margin: 0 }}>Library Prep Run #{run.id}</Typography.Title>
         <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
           <Button onClick={() => navigate(`/library-prep-runs/${runId}/edit`)}>Edit Run</Button>
           {user?.is_admin && (
             <Popconfirm title="Delete this run?" onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/library-prep-runs') })}>
@@ -144,6 +177,11 @@ export default function LibraryPrepRunDetailPage() {
           <Descriptions.Item label="Target Region">{run.target_region ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Primers">{[run.primer_f, run.primer_r].filter(Boolean).join(' / ') || '—'}</Descriptions.Item>
           <Descriptions.Item label="# Samples"><Tag color="orange">{run.sample_count}</Tag></Descriptions.Item>
+          <Descriptions.Item label="Protocol">
+            {run.protocol
+              ? <Button type="link" icon={<FileTextOutlined />} style={{ padding: 0 }} onClick={() => navigate(`/protocols/${run.protocol!.id}`)}>{run.protocol.name}{run.protocol.version ? ` ${run.protocol.version}` : ''}</Button>
+              : '—'}
+          </Descriptions.Item>
           {run.notes && <Descriptions.Item label="Notes" span={2}>{run.notes}</Descriptions.Item>}
         </Descriptions>
       </Card>
@@ -157,6 +195,8 @@ export default function LibraryPrepRunDetailPage() {
       <Modal title="Edit Library Prep" open={!!editSample} onCancel={() => setEditSample(null)} footer={null}>
         <PrepForm form={editForm} loading={updatePrep.isPending} onFinish={handleEditSave} />
       </Modal>
+
+      <RunAttachmentsPanel runType="library_prep" runId={run.id} />
     </div>
   )
 }

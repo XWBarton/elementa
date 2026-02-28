@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.schemas.user import UserRead
 from app.schemas.extraction_run import ExtractionRead
+from app.schemas.protocol import ProtocolRead
 
 
 class LibraryPrepCreate(BaseModel):
@@ -16,6 +17,8 @@ class LibraryPrepCreate(BaseModel):
     average_fragment_size_bp: Optional[int] = None
     library_concentration_ng_ul: Optional[float] = None
     sample_name: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -28,6 +31,8 @@ class LibraryPrepUpdate(BaseModel):
     average_fragment_size_bp: Optional[int] = None
     library_concentration_ng_ul: Optional[float] = None
     sample_name: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -43,6 +48,8 @@ class LibraryPrepRead(BaseModel):
     average_fragment_size_bp: Optional[int] = None
     library_concentration_ng_ul: Optional[float] = None
     sample_name: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
     class Config:
@@ -52,6 +59,7 @@ class LibraryPrepRead(BaseModel):
 class LibraryPrepRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None
@@ -62,6 +70,7 @@ class LibraryPrepRunCreate(BaseModel):
 class LibraryPrepRunUpdate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None
@@ -74,6 +83,8 @@ class LibraryPrepRunRead(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     operator: Optional[UserRead] = None
+    protocol_id: Optional[int] = None
+    protocol: Optional[ProtocolRead] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None

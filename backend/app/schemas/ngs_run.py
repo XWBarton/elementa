@@ -5,12 +5,15 @@ from pydantic import BaseModel
 
 from app.schemas.user import UserRead
 from app.schemas.library_prep_run import LibraryPrepRead
+from app.schemas.protocol import ProtocolRead
 
 
 class NGSRunLibraryCreate(BaseModel):
     library_prep_id: Optional[int] = None
     specimen_code: Optional[str] = None
     sample_name: Optional[str] = None
+    qc_status: Optional[str] = None
+    reads_millions: Optional[float] = None
 
 
 class NGSRunLibraryRead(BaseModel):
@@ -19,6 +22,8 @@ class NGSRunLibraryRead(BaseModel):
     library_prep_id: Optional[int] = None
     specimen_code: Optional[str] = None
     sample_name: Optional[str] = None
+    qc_status: Optional[str] = None
+    reads_millions: Optional[float] = None
     library_prep: Optional[LibraryPrepRead] = None
 
     class Config:
@@ -31,6 +36,7 @@ class NGSRunCreate(BaseModel):
     run_id: Optional[str] = None
     date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None
@@ -47,6 +53,7 @@ class NGSRunUpdate(BaseModel):
     run_id: Optional[str] = None
     date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None
@@ -65,6 +72,8 @@ class NGSRunRead(BaseModel):
     date: Optional[date] = None
     operator_id: Optional[int] = None
     operator: Optional[UserRead] = None
+    protocol_id: Optional[int] = None
+    protocol: Optional[ProtocolRead] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None

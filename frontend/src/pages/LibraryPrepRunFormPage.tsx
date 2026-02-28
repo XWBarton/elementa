@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useCreateLibraryPrepRun, useLibraryPrepRun, useUpdateLibraryPrepRun } from '../hooks/useLibraryPrepRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useAllProtocols } from '../hooks/useProtocols'
 import { LibraryPrepRunCreate } from '../types'
 
 export default function LibraryPrepRunFormPage() {
@@ -14,6 +15,7 @@ export default function LibraryPrepRunFormPage() {
 
   const { data: run } = useLibraryPrepRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
+  const { data: protocols } = useAllProtocols()
   const createRun = useCreateLibraryPrepRun()
   const updateRun = useUpdateLibraryPrepRun()
 
@@ -47,6 +49,18 @@ export default function LibraryPrepRunFormPage() {
           <Form.Item label="Operator" name="operator_id">
             <Select allowClear placeholder="Select operator"
               options={usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []} />
+          </Form.Item>
+          <Form.Item label="Protocol (SOP)" name="protocol_id">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select protocol (optional)"
+              options={protocols?.map(p => ({
+                label: `${p.name}${p.version ? ` ${p.version}` : ''}${p.category ? ` [${p.category}]` : ''}`,
+                value: p.id,
+              })) ?? []}
+            />
           </Form.Item>
           <Form.Item label="Kit" name="kit"><Input placeholder="e.g. NEBNext Ultra II" /></Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. ITS2, 16S" /></Form.Item>

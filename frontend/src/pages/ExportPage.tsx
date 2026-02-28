@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Col, Row, Space, Typography, message } from 'antd'
+import { Button, Card, Col, Modal, Row, Space, Typography, Upload, message } from 'antd'
 import {
   DownloadOutlined,
   ExperimentOutlined,
@@ -8,7 +8,9 @@ import {
   DatabaseOutlined,
   CloudServerOutlined,
   SaveOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
+import type { UploadFile } from 'antd'
 import {
   exportExtractions,
   exportPCRSamples,
@@ -16,6 +18,7 @@ import {
   exportLibraryPreps,
   exportNGSLibraries,
   downloadBackup,
+  restoreBackup,
 } from '../api/export'
 import { useAuth } from '../context/AuthContext'
 
@@ -72,6 +75,8 @@ function ExportCard({ icon, title, description, filename, onExport }: ExportCard
 export default function ExportPage() {
   const { user } = useAuth()
   const [backupLoading, setBackupLoading] = useState(false)
+  const [restoreFile, setRestoreFile] = useState<File | null>(null)
+  const [restoreLoading, setRestoreLoading] = useState(false)
 
   const handleBackup = async () => {
     setBackupLoading(true)
@@ -83,6 +88,34 @@ export default function ExportPage() {
     } finally {
       setBackupLoading(false)
     }
+  }
+
+  const handleRestore = () => {
+    if (!restoreFile) return
+    Modal.confirm({
+      title: 'Restore Database?',
+      content: (
+        <span>
+          This will permanently replace <strong>all current data</strong> with the contents of{' '}
+          <strong>{restoreFile.name}</strong>. This cannot be undone.
+        </span>
+      ),
+      okText: 'Yes, Restore',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setRestoreLoading(true)
+        try {
+          await restoreBackup(restoreFile)
+          message.success('Database restored. Please refresh the page.')
+          setRestoreFile(null)
+        } catch {
+          message.error('Restore failed. Make sure the file is a valid Elementa backup.')
+        } finally {
+          setRestoreLoading(false)
+        }
+      },
+    })
   }
 
   return (
@@ -148,28 +181,63 @@ export default function ExportPage() {
           <Paragraph type="secondary" style={{ marginBottom: 16 }}>
             Admin only. Downloads a complete snapshot of the SQLite database file.
           </Paragraph>
-          <Card size="small" style={{ maxWidth: 400 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Space>
-                <SaveOutlined style={{ color: '#ff4d4f' }} />
-                <Text strong>Full Database Backup</Text>
-              </Space>
-              <Paragraph type="secondary" style={{ margin: 0, fontSize: 13 }}>
-                Downloads the entire database as a <code>.db</code> file. Useful for off-site
-                backups or migrating to a new server.
-              </Paragraph>
-              <Text type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>elementa_backup_YYYY-MM-DD_HHMM.db</Text>
-              <Button
-                danger
-                icon={<DownloadOutlined />}
-                loading={backupLoading}
-                onClick={handleBackup}
-                style={{ marginTop: 4 }}
-              >
-                Download Backup (.db)
-              </Button>
-            </Space>
-          </Card>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={8}>
+              <Card size="small" style={{ borderColor: '#faad14' }}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Space>
+                    <SaveOutlined style={{ color: '#faad14' }} />
+                    <Text strong>Download Backup</Text>
+                  </Space>
+                  <Paragraph type="secondary" style={{ margin: 0, fontSize: 13 }}>
+                    Downloads the entire database as a <code>.db</code> file. Useful for off-site
+                    backups or migrating to a new server.
+                  </Paragraph>
+                  <Text type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>elementa_backup_YYYY-MM-DD_HHMM.db</Text>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    loading={backupLoading}
+                    onClick={handleBackup}
+                    style={{ marginTop: 4 }}
+                  >
+                    Download Backup (.db)
+                  </Button>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <Card size="small" style={{ borderColor: '#ff4d4f' }}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Space>
+                    <UploadOutlined style={{ color: '#ff4d4f' }} />
+                    <Text strong>Restore from Backup</Text>
+                  </Space>
+                  <Paragraph type="secondary" style={{ margin: 0, fontSize: 13 }}>
+                    Permanently replaces all current data with the contents of a backup file.
+                    This cannot be undone.
+                  </Paragraph>
+                  <Upload
+                    accept=".db"
+                    maxCount={1}
+                    beforeUpload={(file) => { setRestoreFile(file); return false }}
+                    onRemove={() => setRestoreFile(null)}
+                    fileList={restoreFile ? [{ uid: '1', name: restoreFile.name } as UploadFile] : []}
+                  >
+                    <Button icon={<UploadOutlined />}>Select .db file</Button>
+                  </Upload>
+                  <Button
+                    danger
+                    icon={<UploadOutlined />}
+                    disabled={!restoreFile}
+                    loading={restoreLoading}
+                    onClick={handleRestore}
+                  >
+                    Restore Database
+                  </Button>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
         </>
       )}
     </div>

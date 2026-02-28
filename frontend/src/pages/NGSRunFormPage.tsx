@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useNGSRun, useCreateNGSRun, useUpdateNGSRun } from '../hooks/useNGSRuns'
 import { useAllLibraryPreps } from '../hooks/useLibraryPrepRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useAllProtocols } from '../hooks/useProtocols'
 import { LibraryPrep, NGSPlatform } from '../types'
 
 const PLATFORMS: NGSPlatform[] = ['Illumina', 'ONT', 'PacBio', 'Other']
@@ -18,6 +19,7 @@ export default function NGSRunFormPage() {
   const { data: existing } = useNGSRun(isEdit ? Number(id) : 0)
   const { data: users } = useUsers()
   const { data: libraryPreps } = useAllLibraryPreps()
+  const { data: protocols } = useAllProtocols()
   const createMutation = useCreateNGSRun()
   const updateMutation = useUpdateNGSRun()
 
@@ -94,6 +96,22 @@ export default function NGSRunFormPage() {
               </Form.Item>
             </Col>
             <Col span={6}>
+              <Form.Item name="protocol_id" label="Protocol (SOP)">
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="Optional"
+                  options={protocols?.map(p => ({
+                    label: `${p.name}${p.version ? ` ${p.version}` : ''}`,
+                    value: p.id,
+                  })) ?? []}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={6}>
               <Form.Item name="flow_cell_id" label="Flow Cell ID">
                 <Input />
               </Form.Item>
@@ -157,7 +175,7 @@ export default function NGSRunFormPage() {
                       />
                     </Form.Item>
                     <Form.Item {...restField} name={[name, 'specimen_code']} style={{ marginBottom: 0 }}>
-                      <Input placeholder="Specimen code / control ID" style={{ width: 200 }} />
+                      <Input placeholder="Sample code / control ID" style={{ width: 200 }} />
                     </Form.Item>
                     <Form.Item {...restField} name={[name, 'sample_name']} style={{ marginBottom: 0 }}>
                       <Input placeholder="Sample name" style={{ width: 180 }} />

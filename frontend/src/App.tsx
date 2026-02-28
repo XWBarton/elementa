@@ -2,8 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import SetupGuard from './components/SetupGuard'
 import AppShell from './components/layout/AppShell'
 import LoginPage from './pages/LoginPage'
+import SetupPage from './pages/SetupPage'
 import DashboardPage from './pages/DashboardPage'
 import AdminPage from './pages/AdminPage'
 
@@ -31,13 +33,20 @@ import LibraryPrepRunDetailPage from './pages/LibraryPrepRunDetailPage'
 import NGSRunListPage from './pages/NGSRunListPage'
 import NGSRunFormPage from './pages/NGSRunFormPage'
 
+// Protocols
+import ProtocolListPage from './pages/ProtocolListPage'
+import ProtocolFormPage from './pages/ProtocolFormPage'
+import ProtocolDetailPage from './pages/ProtocolDetailPage'
+
 import ExportPage from './pages/ExportPage'
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SetupGuard>
         <Routes>
+          <Route path="/setup" element={<SetupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
             <Route path="/" element={<DashboardPage />} />
@@ -71,6 +80,12 @@ export default function App() {
             <Route path="/ngs-runs/new" element={<NGSRunFormPage />} />
             <Route path="/ngs-runs/:id/edit" element={<NGSRunFormPage />} />
 
+            {/* Protocols */}
+            <Route path="/protocols" element={<ProtocolListPage />} />
+            <Route path="/protocols/new" element={<ProtocolFormPage />} />
+            <Route path="/protocols/:id" element={<ProtocolDetailPage />} />
+            <Route path="/protocols/:id/edit" element={<ProtocolFormPage />} />
+
             <Route path="/export" element={<ExportPage />} />
 
             <Route
@@ -84,6 +99,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </SetupGuard>
       </BrowserRouter>
     </AuthProvider>
   )

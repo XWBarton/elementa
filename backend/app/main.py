@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.dependencies import get_current_user, get_db
-from app.routers import auth, users, ngs
+from app.routers import auth, users, ngs, setup, admin
 from app.routers import extraction_runs, pcr_runs, sanger_runs, library_prep_runs
-from app.routers import export
+from app.routers import export, attachments, protocols
 
 
 def create_tables():
@@ -23,6 +23,22 @@ def migrate_db():
     migrations = [
         ("extraction_runs", "container_type", "ALTER TABLE extraction_runs ADD COLUMN container_type VARCHAR(50)"),
         ("extractions", "position", "ALTER TABLE extractions ADD COLUMN position VARCHAR(10)"),
+        ("extractions", "qc_status", "ALTER TABLE extractions ADD COLUMN qc_status VARCHAR(20)"),
+        ("pcr_samples", "qc_status", "ALTER TABLE pcr_samples ADD COLUMN qc_status VARCHAR(20)"),
+        ("sanger_samples", "qc_status", "ALTER TABLE sanger_samples ADD COLUMN qc_status VARCHAR(20)"),
+        ("library_preps", "qc_status", "ALTER TABLE library_preps ADD COLUMN qc_status VARCHAR(20)"),
+        ("ngs_run_libraries", "qc_status", "ALTER TABLE ngs_run_libraries ADD COLUMN qc_status VARCHAR(20)"),
+        ("ngs_run_libraries", "reads_millions", "ALTER TABLE ngs_run_libraries ADD COLUMN reads_millions FLOAT"),
+        ("extractions", "sample_type", "ALTER TABLE extractions ADD COLUMN sample_type VARCHAR(30)"),
+        ("pcr_samples", "sample_type", "ALTER TABLE pcr_samples ADD COLUMN sample_type VARCHAR(30)"),
+        ("sanger_samples", "sample_type", "ALTER TABLE sanger_samples ADD COLUMN sample_type VARCHAR(30)"),
+        ("library_preps", "sample_type", "ALTER TABLE library_preps ADD COLUMN sample_type VARCHAR(30)"),
+        ("users", "avatar_filename", "ALTER TABLE users ADD COLUMN avatar_filename VARCHAR(200)"),
+        ("extraction_runs", "protocol_id", "ALTER TABLE extraction_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
+        ("pcr_runs", "protocol_id", "ALTER TABLE pcr_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
+        ("sanger_runs", "protocol_id", "ALTER TABLE sanger_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
+        ("library_prep_runs", "protocol_id", "ALTER TABLE library_prep_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
+        ("ngs_runs", "protocol_id", "ALTER TABLE ngs_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
     ]
     with engine.connect() as conn:
         for table, column, sql in migrations:
@@ -39,8 +55,8 @@ def seed_admin():
 
     db = SessionLocal()
     try:
-        exists = db.query(User).filter(User.username == settings.FIRST_ADMIN_USERNAME).first()
-        if not exists:
+        # Only seed on a completely empty database so restarts never re-trigger setup
+        if db.query(User).count() == 0:
             admin = User(
                 username=settings.FIRST_ADMIN_USERNAME,
                 email=settings.FIRST_ADMIN_EMAIL,
@@ -62,7 +78,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Elementa LIMS", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="Elementa", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -72,6 +88,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(setup.router)
+app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(extraction_runs.router)
@@ -79,12 +97,14 @@ app.include_router(pcr_runs.router)
 app.include_router(sanger_runs.router)
 app.include_router(library_prep_runs.router)
 app.include_router(ngs.router)
+app.include_router(protocols.router)
 app.include_router(export.router)
+app.include_router(attachments.router)
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "2.0.0"}
+    return {"status": "ok", "version": "1.0.0"}
 
 
 @app.get("/stats")

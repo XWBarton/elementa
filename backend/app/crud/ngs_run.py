@@ -11,6 +11,7 @@ from app.schemas.ngs_run import NGSRunCreate, NGSRunUpdate
 def _base_query(db: Session):
     return db.query(NGSRun).options(
         joinedload(NGSRun.operator),
+        joinedload(NGSRun.protocol),
         joinedload(NGSRun.libraries).joinedload(NGSRunLibrary.library_prep).joinedload(LibraryPrep.extraction),
     )
 

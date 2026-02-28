@@ -15,6 +15,7 @@ from app.schemas.extraction_run import (
 def _run_query(db: Session):
     return db.query(ExtractionRun).options(
         joinedload(ExtractionRun.operator),
+        joinedload(ExtractionRun.protocol),
         joinedload(ExtractionRun.samples),
     )
 

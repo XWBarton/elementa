@@ -11,6 +11,7 @@ from app.schemas.sanger_run import SangerRunCreate, SangerRunUpdate, SangerSampl
 def _run_query(db: Session):
     return db.query(SangerRun).options(
         joinedload(SangerRun.operator),
+        joinedload(SangerRun.protocol),
         joinedload(SangerRun.samples).joinedload(SangerSample.pcr_sample).joinedload(PCRSample.extraction),
     )
 

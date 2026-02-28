@@ -10,6 +10,7 @@ from app.schemas.library_prep_run import LibraryPrepRunCreate, LibraryPrepRunUpd
 def _run_query(db: Session):
     return db.query(LibraryPrepRun).options(
         joinedload(LibraryPrepRun.operator),
+        joinedload(LibraryPrepRun.protocol),
         joinedload(LibraryPrepRun.samples).joinedload(LibraryPrep.extraction),
     )
 

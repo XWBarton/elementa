@@ -45,3 +45,11 @@ export async function downloadBackup() {
   const { data, headers } = await client.get('/export/backup', { responseType: 'blob' })
   downloadBlob(data, filenameFromHeaders(headers, 'elementa_backup.db'))
 }
+
+export async function restoreBackup(file: File): Promise<void> {
+  const formData = new FormData()
+  formData.append('file', file)
+  await client.post('/export/restore', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}

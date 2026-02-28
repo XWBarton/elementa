@@ -1,13 +1,17 @@
 import {
   Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useAddSangerSample, useDeleteSangerRun, useDeleteSangerSample, useSangerRun, useUpdateSangerSample } from '../hooks/useSangerRuns'
 import { useAllPCRSamples } from '../hooks/usePCRRuns'
 import { PCRSample, SangerSample, SangerSampleCreate, SangerSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
+import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
+import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
+import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
+import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
 
 export default function SangerRunDetailPage() {
   const { id } = useParams()
@@ -61,9 +65,30 @@ export default function SangerRunDetailPage() {
     setEditSample(null)
   }
 
+  const handleExport = async () => {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`/api/sanger-runs/${run.id}/export`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `sanger-run-${run.id}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const columns = [
     {
-      title: 'Specimen Code',
+      title: 'Type',
+      dataIndex: 'sample_type',
+      key: 'sample_type',
+      width: 140,
+      render: (v: string) => <SampleTypeTag type={v} />,
+    },
+    {
+      title: 'Sample Code',
       key: 'specimen',
       render: (_: unknown, r: SangerSample) => {
         const code = r.specimen_code ?? r.pcr_sample?.specimen_code ?? r.pcr_sample?.extraction?.specimen_code
@@ -79,6 +104,7 @@ export default function SangerRunDetailPage() {
     { title: 'Seq. Length (bp)', dataIndex: 'sequence_length_bp', key: 'sequence_length_bp', render: (v: number) => v ?? '—' },
     { title: 'Quality Notes', dataIndex: 'quality_notes', key: 'quality_notes', render: (v: string) => v ?? '—' },
     { title: 'Output File', dataIndex: 'output_file_path', key: 'output_file_path', render: (v: string) => v ?? '—' },
+    { title: 'QC', dataIndex: 'qc_status', key: 'qc_status', render: (v: string) => <QcStatusTag status={v} /> },
     {
       title: 'Actions',
       key: 'actions',
@@ -95,7 +121,10 @@ export default function SangerRunDetailPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SampleForm = ({ form, loading, onFinish }: { form: any; loading: boolean; onFinish: (v: SangerSampleCreate) => void }) => (
-    <Form form={form} layout="vertical" onFinish={onFinish}>
+    <Form form={form} layout="vertical" onFinish={onFinish} onValuesChange={(c) => { if (c.sample_type === 'ntc') form.setFieldValue('specimen_code', 'NTC'); if (c.sample_type === 'extraction_blank') form.setFieldValue('specimen_code', 'EXB') }}>
+      <Form.Item label="Sample Type" name="sample_type">
+        <SampleTypeSelect />
+      </Form.Item>
       <Form.Item label="PCR Sample (optional — link to DB record)" name="pcr_sample_id">
         <Select
           allowClear
@@ -106,8 +135,8 @@ export default function SangerRunDetailPage() {
           onChange={onPCRSampleChange(form)}
         />
       </Form.Item>
-      <Form.Item label="Specimen Code" name="specimen_code" extra="Auto-filled when PCR sample is selected; edit freely for pre-database specimens or positive controls">
-        <Input placeholder="e.g. AMPH2024-042 or PCTRL-01" />
+      <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled when PCR sample is selected; edit freely for pre-database specimens or positive controls">
+        <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-042 or PCTRL-01" />
       </Form.Item>
       <Form.Item label="Sequence Length (bp)" name="sequence_length_bp">
         <InputNumber min={0} style={{ width: '100%' }} />
@@ -117,6 +146,9 @@ export default function SangerRunDetailPage() {
       </Form.Item>
       <Form.Item label="Output File Path" name="output_file_path">
         <Input placeholder="/path/to/sequence.ab1" />
+      </Form.Item>
+      <Form.Item name="qc_status" label="QC Status">
+        <QcStatusSelect />
       </Form.Item>
       <Form.Item label="Notes" name="notes">
         <Input />
@@ -132,6 +164,7 @@ export default function SangerRunDetailPage() {
       <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <Typography.Title level={3} style={{ margin: 0 }}>Sanger Run #{run.id}</Typography.Title>
         <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
           <Button onClick={() => navigate(`/sanger-runs/${runId}/edit`)}>Edit Run</Button>
           {user?.is_admin && (
             <Popconfirm title="Delete this run?" onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/sanger-runs') })}>
@@ -149,6 +182,11 @@ export default function SangerRunDetailPage() {
           <Descriptions.Item label="Provider">{run.service_provider ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Order ID">{run.order_id ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="# Samples"><Tag color="purple">{run.sample_count}</Tag></Descriptions.Item>
+          <Descriptions.Item label="Protocol">
+            {run.protocol
+              ? <Button type="link" icon={<FileTextOutlined />} style={{ padding: 0 }} onClick={() => navigate(`/protocols/${run.protocol!.id}`)}>{run.protocol.name}{run.protocol.version ? ` ${run.protocol.version}` : ''}</Button>
+              : '—'}
+          </Descriptions.Item>
           {run.notes && <Descriptions.Item label="Notes" span={2}>{run.notes}</Descriptions.Item>}
         </Descriptions>
       </Card>
@@ -162,6 +200,8 @@ export default function SangerRunDetailPage() {
       <Modal title="Edit Sample" open={!!editSample} onCancel={() => setEditSample(null)} footer={null}>
         <SampleForm form={editForm} loading={updateSample.isPending} onFinish={handleEditSave} />
       </Modal>
+
+      <RunAttachmentsPanel runType="sanger" runId={run.id} />
     </div>
   )
 }

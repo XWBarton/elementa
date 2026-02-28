@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.schemas.user import UserRead
 from app.schemas.pcr_run import PCRSampleRead
+from app.schemas.protocol import ProtocolRead
 
 
 class SangerSampleCreate(BaseModel):
@@ -13,6 +14,8 @@ class SangerSampleCreate(BaseModel):
     sequence_length_bp: Optional[int] = None
     output_file_path: Optional[str] = None
     quality_notes: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -22,6 +25,8 @@ class SangerSampleUpdate(BaseModel):
     sequence_length_bp: Optional[int] = None
     output_file_path: Optional[str] = None
     quality_notes: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -34,6 +39,8 @@ class SangerSampleRead(BaseModel):
     sequence_length_bp: Optional[int] = None
     output_file_path: Optional[str] = None
     quality_notes: Optional[str] = None
+    qc_status: Optional[str] = None
+    sample_type: Optional[str] = None
     notes: Optional[str] = None
 
     class Config:
@@ -43,6 +50,7 @@ class SangerSampleRead(BaseModel):
 class SangerRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None
@@ -53,6 +61,7 @@ class SangerRunCreate(BaseModel):
 class SangerRunUpdate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
+    protocol_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None
@@ -65,6 +74,8 @@ class SangerRunRead(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     operator: Optional[UserRead] = None
+    protocol_id: Optional[int] = None
+    protocol: Optional[ProtocolRead] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None

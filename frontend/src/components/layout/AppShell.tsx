@@ -1,4 +1,4 @@
-import { Layout, Menu, Button, Typography, Space, Avatar } from 'antd'
+import { Layout, Menu, Button, Typography, Space, Avatar, Tooltip, message } from 'antd'
 import {
   ExperimentOutlined,
   DatabaseOutlined,
@@ -10,9 +10,12 @@ import {
   UserOutlined,
   DashboardOutlined,
   DownloadOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { uploadAvatar, getAvatarBlob } from '../../api/users'
 
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
@@ -24,6 +27,7 @@ const menuItems = [
   { key: '/sanger-runs', icon: <AlignLeftOutlined />, label: 'Sanger' },
   { key: '/library-prep-runs', icon: <DatabaseOutlined />, label: 'Library Prep' },
   { key: '/ngs-runs', icon: <CloudServerOutlined />, label: 'NGS Runs' },
+  { key: '/protocols', icon: <FileTextOutlined />, label: 'Protocols' },
   { key: '/export', icon: <DownloadOutlined />, label: 'Export' },
 ]
 
@@ -32,7 +36,34 @@ const adminItem = { key: '/admin', icon: <SettingOutlined />, label: 'Settings' 
 export default function AppShell() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let url: string | null = null
+    if (user?.avatar_filename) {
+      getAvatarBlob(user.id)
+        .then((u) => { url = u; setAvatarUrl(u) })
+        .catch(() => setAvatarUrl(null))
+    } else {
+      setAvatarUrl(null)
+    }
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, [user?.id, user?.avatar_filename])
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      await uploadAvatar(file)
+      await refreshUser()
+      message.success('Profile photo updated')
+    } catch {
+      message.error('Failed to upload photo')
+    }
+    e.target.value = ''
+  }
 
   const allItems = user?.is_admin ? [...menuItems, adminItem] : menuItems
 
@@ -79,7 +110,21 @@ export default function AppShell() {
           }}
         >
           <Space>
-            <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
+              style={{ display: 'none' }}
+              onChange={handleAvatarChange}
+            />
+            <Tooltip title="Click to change profile photo">
+              <Avatar
+                src={avatarUrl || undefined}
+                icon={!avatarUrl ? <UserOutlined /> : undefined}
+                style={{ backgroundColor: '#1677ff', cursor: 'pointer' }}
+                onClick={() => fileInputRef.current?.click()}
+              />
+            </Tooltip>
             <Text strong>{user?.full_name || user?.username}</Text>
             {user?.is_admin && (
               <Text type="secondary" style={{ fontSize: 12 }}>(Admin)</Text>

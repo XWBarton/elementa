@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.protocol import Protocol
 
 
 class NGSRun(Base):
@@ -16,6 +21,7 @@ class NGSRun(Base):
     run_id: Mapped[Optional[str]] = mapped_column(String(200))
     date: Mapped[Optional[date]] = mapped_column(Date)
     operator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    protocol_id: Mapped[Optional[int]] = mapped_column(ForeignKey("protocols.id"), nullable=True)
     flow_cell_id: Mapped[Optional[str]] = mapped_column(String(200))
     reagent_kit: Mapped[Optional[str]] = mapped_column(String(200))
     output_path: Mapped[Optional[str]] = mapped_column(String(500))
@@ -29,6 +35,7 @@ class NGSRun(Base):
     )
 
     operator = relationship("User", foreign_keys=[operator_id])
+    protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     libraries = relationship("NGSRunLibrary", back_populates="ngs_run", cascade="all, delete-orphan")
 
 
@@ -40,6 +47,8 @@ class NGSRunLibrary(Base):
     library_prep_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_preps.id"), nullable=True)
     specimen_code: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     sample_name: Mapped[Optional[str]] = mapped_column(String(200))
+    qc_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    reads_millions: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     ngs_run = relationship("NGSRun", back_populates="libraries")
     library_prep = relationship("LibraryPrep", back_populates="ngs_run_libraries")

@@ -1,12 +1,15 @@
 import csv
 import io
+import os
 import sqlite3
+import tempfile
 from datetime import datetime, timezone
 
-from fastapi import Depends
+from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
+from app.database import engine
 from app.dependencies import get_current_user, get_db, require_admin
 from app.config import settings
 from fastapi import APIRouter
@@ -284,7 +287,7 @@ def export_ngs_libraries(db: Session = Depends(get_db), _=Depends(get_current_us
     return _csv_response(rows, NGS_FIELDS, f"ngs_libraries_{today}.csv")
 
 
-# ── database backup ───────────────────────────────────────────────────────────
+# ── database backup & restore ─────────────────────────────────────────────────
 
 @router.get("/backup")
 def download_backup(_=Depends(require_admin)):
@@ -299,3 +302,51 @@ def download_backup(_=Depends(require_admin)):
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/restore")
+async def restore_backup(file: UploadFile = File(...), _=Depends(require_admin)):
+    data = await file.read()
+
+    # Validate SQLite magic bytes
+    if not data.startswith(b"SQLite format 3\x00"):
+        raise HTTPException(status_code=400, detail="File is not a valid SQLite database")
+
+    tmp_path = None
+    try:
+        # Write to temp file and verify it opens cleanly
+        fd, tmp_path = tempfile.mkstemp(suffix=".db")
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+
+        test_conn = sqlite3.connect(tmp_path)
+        try:
+            test_conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchall()
+        except sqlite3.DatabaseError as e:
+            raise HTTPException(status_code=400, detail=f"Database integrity check failed: {e}")
+        finally:
+            test_conn.close()
+
+        # Close all pooled SQLAlchemy connections before swapping
+        engine.dispose()
+
+        # Use sqlite3.backup() — correctly handles WAL mode
+        # (a plain file swap would leave stale -wal/-shm files and silently lose data)
+        db_path = settings.DATABASE_URL.replace("sqlite:///", "", 1)
+        src = sqlite3.connect(tmp_path)
+        dst = sqlite3.connect(db_path)
+        try:
+            src.backup(dst)
+        finally:
+            src.close()
+            dst.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Restore failed: {e}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+    return {"ok": True, "message": "Database restored. Please refresh the page."}

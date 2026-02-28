@@ -26,6 +26,7 @@ class UserUpdate(BaseModel):
 
 class UserRead(UserBase):
     id: int
+    avatar_filename: Optional[str] = None
     created_at: datetime
 
     class Config:

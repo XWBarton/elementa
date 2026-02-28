@@ -10,6 +10,7 @@ from app.schemas.pcr_run import PCRRunCreate, PCRRunUpdate, PCRSampleCreate, PCR
 def _run_query(db: Session):
     return db.query(PCRRun).options(
         joinedload(PCRRun.operator),
+        joinedload(PCRRun.protocol),
         joinedload(PCRRun.samples).joinedload(PCRSample.extraction),
     )
 

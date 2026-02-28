@@ -1,4 +1,7 @@
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.crud import extraction_run as crud
@@ -114,3 +117,24 @@ def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=
         raise HTTPException(status_code=404, detail="Sample not found")
     crud.delete_sample(db, sample)
     return {"detail": "Deleted"}
+
+
+@router.get("/{run_id}/export")
+def export_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    obj = crud.get_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Extraction run not found")
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["run_id", "run_date", "kit", "extraction_type", "container_type",
+                "specimen_code", "position", "input_quantity", "input_quantity_unit",
+                "yield_ng_ul", "a260_280", "a260_230", "rin_score", "qc_status",
+                "storage_location", "notes"])
+    for s in obj.samples:
+        w.writerow([obj.id, obj.run_date, obj.kit, obj.extraction_type, obj.container_type,
+                    s.specimen_code, s.position, s.input_quantity, s.input_quantity_unit,
+                    s.yield_ng_ul, s.a260_280, s.a260_230, s.rin_score, s.qc_status,
+                    s.storage_location, s.notes])
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="extraction-run-{run_id}.csv"'})

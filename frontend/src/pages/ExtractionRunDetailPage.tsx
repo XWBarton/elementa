@@ -15,7 +15,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import {
@@ -29,6 +29,10 @@ import {
 import { Extraction, ExtractionCreate, ExtractionUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
 import ContainerView, { nextPosition } from '../components/ContainerView'
+import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
+import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
+import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
+import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
 
 export default function ExtractionRunDetailPage() {
   const { id } = useParams()
@@ -99,6 +103,20 @@ export default function ExtractionRunDetailPage() {
     navigate('/extraction-runs')
   }
 
+  const handleExport = async () => {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`/api/extraction-runs/${run.id}/export`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `extraction-run-${run.id}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const openAdd = () => {
     if (containerType) {
       const suggested = nextPosition(containerType, samples)
@@ -133,12 +151,14 @@ export default function ExtractionRunDetailPage() {
       width: 80,
       render: (v: string) => v ? <Tag color="purple">{v}</Tag> : '—',
     }] : []),
-    { title: 'Specimen Code', dataIndex: 'specimen_code', key: 'specimen_code', render: (v: string) => <Tag color="blue">{v}</Tag> },
+    { title: 'Type', dataIndex: 'sample_type', key: 'sample_type', width: 140, render: (v: string) => <SampleTypeTag type={v} /> },
+    { title: 'Sample Code', dataIndex: 'specimen_code', key: 'specimen_code', render: (v: string) => <Tag color="blue">{v}</Tag> },
     { title: 'Yield (ng/µl)', dataIndex: 'yield_ng_ul', key: 'yield_ng_ul', render: (v: number) => v ?? '—' },
     { title: 'A260/280', dataIndex: 'a260_280', key: 'a260_280', render: (v: number) => v ?? '—' },
     { title: 'A260/230', dataIndex: 'a260_230', key: 'a260_230', render: (v: number) => v ?? '—' },
     { title: 'RIN', dataIndex: 'rin_score', key: 'rin_score', render: (v: number) => v ?? '—' },
     { title: 'Storage', dataIndex: 'storage_location', key: 'storage_location', render: (v: string) => v ?? '—' },
+    { title: 'QC', dataIndex: 'qc_status', key: 'qc_status', render: (v: string) => <QcStatusTag status={v} /> },
     {
       title: 'Actions',
       key: 'actions',
@@ -167,6 +187,7 @@ export default function ExtractionRunDetailPage() {
           Extraction Run #{run.id}
         </Typography.Title>
         <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
           <Button onClick={() => navigate(`/extraction-runs/${runId}/edit`)}>Edit Run</Button>
           {user?.is_admin && (
             <Popconfirm title="Delete this run and all its samples?" onConfirm={handleDeleteRun}>
@@ -185,6 +206,11 @@ export default function ExtractionRunDetailPage() {
           <Descriptions.Item label="Container">{run.container_type ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Elution Volume">{run.elution_volume_ul ? `${run.elution_volume_ul} µl` : '—'}</Descriptions.Item>
           <Descriptions.Item label="Samples"><Tag color="blue">{run.sample_count}</Tag></Descriptions.Item>
+          <Descriptions.Item label="Protocol">
+            {run.protocol
+              ? <Button type="link" icon={<FileTextOutlined />} style={{ padding: 0 }} onClick={() => navigate(`/protocols/${run.protocol!.id}`)}>{run.protocol.name}{run.protocol.version ? ` ${run.protocol.version}` : ''}</Button>
+              : '—'}
+          </Descriptions.Item>
           {run.protocol_notes && <Descriptions.Item label="Protocol Notes" span={2}>{run.protocol_notes}</Descriptions.Item>}
           {run.notes && <Descriptions.Item label="Notes" span={2}>{run.notes}</Descriptions.Item>}
         </Descriptions>
@@ -201,7 +227,7 @@ export default function ExtractionRunDetailPage() {
 
       {/* Container visualisation */}
       {containerType && (
-        <Card title={`${containerType} layout`} style={{ marginBottom: 16 }}>
+        <Card title={containerType === 'tubes' ? 'Tube Layout' : containerType === '96-well plate' ? '96-Well Plate Layout' : '384-Well Plate Layout'} style={{ marginBottom: 16 }}>
           <ContainerView
             containerType={containerType}
             samples={samples}
@@ -252,9 +278,12 @@ export default function ExtractionRunDetailPage() {
               key: 'single',
               label: 'Single',
               children: (
-                <Form form={addForm} layout="vertical" onFinish={handleAddSingle}>
-                  <Form.Item label="Specimen Code" name="specimen_code" rules={[{ required: true }]}>
-                    <Input placeholder="e.g. AMPH2024-001" />
+                <Form form={addForm} layout="vertical" onFinish={handleAddSingle} onValuesChange={(c) => { if (c.sample_type === 'ntc') addForm.setFieldValue('specimen_code', 'NTC'); if (c.sample_type === 'extraction_blank') addForm.setFieldValue('specimen_code', 'EXB') }}>
+                  <Form.Item label="Sample Type" name="sample_type">
+                    <SampleTypeSelect />
+                  </Form.Item>
+                  <Form.Item label="Sample Code" name="specimen_code" rules={[{ required: true }]}>
+                    <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-001 or POS-CTRL-1" />
                   </Form.Item>
                   {positionField}
                   <Form.Item label="Input Quantity" name="input_quantity">
@@ -277,6 +306,9 @@ export default function ExtractionRunDetailPage() {
                   </Form.Item>
                   <Form.Item label="Storage Location" name="storage_location">
                     <Input placeholder="Box / rack / position" />
+                  </Form.Item>
+                  <Form.Item name="qc_status" label="QC Status">
+                    <QcStatusSelect />
                   </Form.Item>
                   <Form.Item label="Notes" name="notes">
                     <Input.TextArea rows={2} />
@@ -318,9 +350,12 @@ export default function ExtractionRunDetailPage() {
         footer={null}
         width={500}
       >
-        <Form form={editForm} layout="vertical" onFinish={handleEditSave}>
-          <Form.Item label="Specimen Code" name="specimen_code" rules={[{ required: true }]}>
-            <Input />
+        <Form form={editForm} layout="vertical" onFinish={handleEditSave} onValuesChange={(c) => { if (c.sample_type === 'ntc') editForm.setFieldValue('specimen_code', 'NTC'); if (c.sample_type === 'extraction_blank') editForm.setFieldValue('specimen_code', 'EXB') }}>
+          <Form.Item label="Sample Type" name="sample_type">
+            <SampleTypeSelect />
+          </Form.Item>
+          <Form.Item label="Sample Code" name="specimen_code" rules={[{ required: true }]}>
+            <SpecimenCodeAutocomplete />
           </Form.Item>
           {positionField}
           <Form.Item label="Input Quantity" name="input_quantity">
@@ -344,6 +379,9 @@ export default function ExtractionRunDetailPage() {
           <Form.Item label="Storage Location" name="storage_location">
             <Input />
           </Form.Item>
+          <Form.Item name="qc_status" label="QC Status">
+            <QcStatusSelect />
+          </Form.Item>
           <Form.Item label="Notes" name="notes">
             <Input.TextArea rows={2} />
           </Form.Item>
@@ -352,6 +390,8 @@ export default function ExtractionRunDetailPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <RunAttachmentsPanel runType="extraction" runId={run.id} />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useCreateExtractionRun, useExtractionRun, useUpdateExtractionRun } from '../hooks/useExtractionRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useAllProtocols } from '../hooks/useProtocols'
 import { addExtractionSample } from '../api/extraction_runs'
 import { ExtractionRunCreate } from '../types'
 
@@ -17,6 +18,7 @@ export default function ExtractionRunFormPage() {
 
   const { data: run } = useExtractionRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
+  const { data: protocols } = useAllProtocols()
   const createRun = useCreateExtractionRun()
   const updateRun = useUpdateExtractionRun()
 
@@ -93,6 +95,18 @@ export default function ExtractionRunFormPage() {
               usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []
             } />
           </Form.Item>
+          <Form.Item label="Protocol (SOP)" name="protocol_id">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select protocol (optional)"
+              options={protocols?.map(p => ({
+                label: `${p.name}${p.version ? ` ${p.version}` : ''}${p.category ? ` [${p.category}]` : ''}`,
+                value: p.id,
+              })) ?? []}
+            />
+          </Form.Item>
           <Form.Item label="Kit" name="kit">
             <Input placeholder="e.g. DNeasy Plant Mini Kit" />
           </Form.Item>
@@ -105,8 +119,7 @@ export default function ExtractionRunFormPage() {
           </Form.Item>
           <Form.Item label="Container Type" name="container_type">
             <Select allowClear placeholder="Tubes or plate format" options={[
-              { label: '1.5 ml tubes', value: 'tubes' },
-              { label: '2 ml tubes', value: 'tubes' },
+              { label: 'Tubes', value: 'tubes' },
               { label: '96-well plate', value: '96-well plate' },
               { label: '384-well plate', value: '384-well plate' },
             ]} />

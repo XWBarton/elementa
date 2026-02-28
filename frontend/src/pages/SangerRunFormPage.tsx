@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useCreateSangerRun, useSangerRun, useUpdateSangerRun } from '../hooks/useSangerRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useAllProtocols } from '../hooks/useProtocols'
 import { SangerRunCreate } from '../types'
 
 export default function SangerRunFormPage() {
@@ -14,6 +15,7 @@ export default function SangerRunFormPage() {
 
   const { data: run } = useSangerRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
+  const { data: protocols } = useAllProtocols()
   const createRun = useCreateSangerRun()
   const updateRun = useUpdateSangerRun()
 
@@ -47,6 +49,18 @@ export default function SangerRunFormPage() {
           <Form.Item label="Operator" name="operator_id">
             <Select allowClear placeholder="Select operator"
               options={usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []} />
+          </Form.Item>
+          <Form.Item label="Protocol (SOP)" name="protocol_id">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select protocol (optional)"
+              options={protocols?.map(p => ({
+                label: `${p.name}${p.version ? ` ${p.version}` : ''}${p.category ? ` [${p.category}]` : ''}`,
+                value: p.id,
+              })) ?? []}
+            />
           </Form.Item>
           <Form.Item label="Primer" name="primer"><Input placeholder="Primer name or sequence" /></Form.Item>
           <Form.Item label="Direction" name="direction">
