@@ -35,6 +35,13 @@ def _server_url(url: str) -> str:
     return re.sub(r"(?i)^(https?://)localhost\b", r"\1host.docker.internal", url.rstrip("/"))
 
 
+@router.get("/public-settings")
+def get_public_settings(db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Non-admin endpoint — returns only the values needed by the UI for all users."""
+    m = _get_settings_map(db)
+    return {"tessera_url": m.get("tessera_url", "")}
+
+
 @router.get("/settings/")
 def get_settings(db: Session = Depends(get_db), _=Depends(require_admin)):
     m = _get_settings_map(db)
