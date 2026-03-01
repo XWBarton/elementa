@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="elementa-logo.png" alt="Elementa" height="120" />
+</p>
+
 # Elementa
 
 Elementa is a molecular biology laboratory information management system (LIMS) for tracking multi-step genomic workflows. It manages extraction, PCR, Sanger sequencing, library preparation, and NGS runs — linking each step in the chain from raw specimen through to sequencing output.
