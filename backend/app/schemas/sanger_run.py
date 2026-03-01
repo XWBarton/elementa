@@ -11,6 +11,7 @@ from app.schemas.protocol import ProtocolRead
 class SangerSampleCreate(BaseModel):
     pcr_sample_id: Optional[int] = None
     specimen_code: Optional[str] = None
+    sequence: Optional[str] = None
     sequence_length_bp: Optional[int] = None
     output_file_path: Optional[str] = None
     quality_notes: Optional[str] = None
@@ -22,6 +23,7 @@ class SangerSampleCreate(BaseModel):
 class SangerSampleUpdate(BaseModel):
     pcr_sample_id: Optional[int] = None
     specimen_code: Optional[str] = None
+    sequence: Optional[str] = None
     sequence_length_bp: Optional[int] = None
     output_file_path: Optional[str] = None
     quality_notes: Optional[str] = None
@@ -36,6 +38,7 @@ class SangerSampleRead(BaseModel):
     pcr_sample_id: Optional[int] = None
     pcr_sample: Optional[PCRSampleRead] = None
     specimen_code: Optional[str] = None
+    sequence: Optional[str] = None
     sequence_length_bp: Optional[int] = None
     output_file_path: Optional[str] = None
     quality_notes: Optional[str] = None

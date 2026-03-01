@@ -135,7 +135,11 @@ function IntegrationsTab() {
     setTesting(true)
     setTestStatus(null)
     try {
-      await testTessera(url, token || undefined)
+      await saveSetting('tessera_url', url)
+      if (token) await saveSetting('tessera_api_token', token)
+      setToken('')
+      refetch()
+      await testTessera()
       setTestStatus('ok')
       setTestMsg('Connection successful')
     } catch (e: any) {
@@ -153,8 +157,8 @@ function IntegrationsTab() {
         Generate the API token from Tessera's Settings → Integrations tab.
       </Typography.Paragraph>
       <Form layout="vertical">
-        <Form.Item label="Tessera URL">
-          <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="http://tessera:8000" />
+        <Form.Item label="Tessera URL" extra="Enter the Tessera frontend URL (e.g. http://192.168.1.10:8520)">
+          <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="http://localhost:8520" />
         </Form.Item>
         <Form.Item
           label="API Token"

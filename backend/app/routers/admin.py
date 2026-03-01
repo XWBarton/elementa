@@ -19,6 +19,12 @@ class SettingValue(BaseModel):
     value: str
 
 
+class TesseraLinkPayload(BaseModel):
+    specimen_code: str
+    elementa_ref: str
+    run_type: str
+
+
 def _get_settings_map(db: Session) -> dict[str, str]:
     return {s.key: s.value for s in db.query(AppSetting).all()}
 
@@ -67,7 +73,7 @@ def test_tessera(url: str = "", token: str = "", db: Session = Depends(get_db), 
     if not token:
         raise HTTPException(status_code=400, detail="Tessera API token not configured")
     req = urllib.request.Request(
-        f"{_server_url(url)}/specimens/?limit=1",
+        f"{_server_url(url)}/api/specimens/?limit=1",
         headers={"Authorization": f"Bearer {token}"},
     )
     try:
@@ -92,7 +98,7 @@ def search_tessera(q: str = "", db: Session = Depends(get_db), _=Depends(get_cur
 
     params = urllib.parse.urlencode({"search": q, "limit": 10})
     req = urllib.request.Request(
-        f"{_server_url(url)}/specimens/?{params}",
+        f"{_server_url(url)}/api/specimens/?{params}",
         headers={"Authorization": f"Bearer {token}"},
     )
     try:
@@ -104,6 +110,34 @@ def search_tessera(q: str = "", db: Session = Depends(get_db), _=Depends(get_cur
         raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Tessera search failed: {e}")
+
+
+@router.post("/tessera/link")
+def link_tessera_specimen(payload: TesseraLinkPayload, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    m = _get_settings_map(db)
+    url = m.get("tessera_url", "").strip()
+    token = m.get("tessera_api_token", "").strip()
+    if not url or not token:
+        return {"ok": False}
+    data = json.dumps({
+        "specimen_code": payload.specimen_code,
+        "elementa_ref": payload.elementa_ref,
+        "run_type": payload.run_type,
+    }).encode()
+    req = urllib.request.Request(
+        f"{_server_url(url)}/api/specimens/link-elementa",
+        data=data,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=8)
+        return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return {"ok": False}  # specimen not in Tessera — silent
+        return {"ok": False}
+    except Exception:
+        return {"ok": False}
 
 
 def _format(s: dict) -> dict:

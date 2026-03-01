@@ -29,3 +29,7 @@ export async function searchTessera(q: string): Promise<TesseraSpecimen[]> {
   const { data } = await client.get('/admin/tessera/search', { params: { q } })
   return data
 }
+
+export async function linkToTessera(specimenCode: string, elementaRef: string, runType: string): Promise<void> {
+  await client.post('/admin/tessera/link', { specimen_code: specimenCode, elementa_ref: elementaRef, run_type: runType })
+}

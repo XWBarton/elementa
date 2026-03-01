@@ -193,6 +193,7 @@ export interface SangerSample {
   pcr_sample_id?: number
   pcr_sample?: PCRSample
   specimen_code?: string
+  sequence?: string
   sequence_length_bp?: number
   output_file_path?: string
   quality_notes?: string
@@ -204,6 +205,7 @@ export interface SangerSample {
 export interface SangerSampleCreate {
   pcr_sample_id?: number
   specimen_code?: string
+  sequence?: string
   sequence_length_bp?: number
   output_file_path?: string
   quality_notes?: string

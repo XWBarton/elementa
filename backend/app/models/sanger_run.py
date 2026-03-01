@@ -45,6 +45,7 @@ class SangerSample(Base):
     run_id: Mapped[int] = mapped_column(ForeignKey("sanger_runs.id"), nullable=False)
     pcr_sample_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pcr_samples.id"), nullable=True)
     specimen_code: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    sequence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sequence_length_bp: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     output_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     quality_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

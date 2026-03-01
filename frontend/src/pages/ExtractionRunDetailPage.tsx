@@ -14,6 +14,7 @@ import {
   Tag,
   Typography,
   message,
+  notification,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -31,6 +32,7 @@ import { useAuth } from '../context/AuthContext'
 import ContainerView, { nextPosition } from '../components/ContainerView'
 import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
 import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
+import { useTesseraUrl } from '../hooks/useTesseraUrl'
 import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
 import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
 
@@ -42,6 +44,7 @@ export default function ExtractionRunDetailPage() {
   const specimenParam = searchParams.get('specimen')
   const { user } = useAuth()
 
+  const tesseraUrl = useTesseraUrl()
   const { data: run, isLoading } = useExtractionRun(runId)
   const addSample = useAddExtractionSample(runId)
   const addBulk = useAddExtractionSamplesBulk(runId)
@@ -74,6 +77,16 @@ export default function ExtractionRunDetailPage() {
     message.success('Sample added')
     addForm.resetFields()
     setAddModalOpen(false)
+    const code = values.specimen_code
+    if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
+      const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'extraction' })
+      notification.info({
+        message: 'Record usage in Tessera',
+        description: `Log what was taken from ${code}`,
+        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
+        duration: 12,
+      })
+    }
   }
 
   const handleAddBulk = async () => {

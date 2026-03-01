@@ -1,5 +1,5 @@
 import {
-  Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
+  Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, notification,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -16,6 +16,7 @@ import { Extraction, LibraryPrep, LibraryPrepCreate, LibraryPrepUpdate } from '.
 import { useAuth } from '../context/AuthContext'
 import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
 import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
+import { useTesseraUrl } from '../hooks/useTesseraUrl'
 import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
 import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
 
@@ -25,6 +26,7 @@ export default function LibraryPrepRunDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  const tesseraUrl = useTesseraUrl()
   const { data: run, isLoading } = useLibraryPrepRun(runId)
   const { data: allExtractions } = useAllExtractions()
   const addPrep = useAddLibraryPrep(runId)
@@ -52,6 +54,16 @@ export default function LibraryPrepRunDetailPage() {
     message.success('Library prep added')
     addForm.resetFields()
     setAddModalOpen(false)
+    const code = values.specimen_code
+    if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
+      const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'library_prep' })
+      notification.info({
+        message: 'Record usage in Tessera',
+        description: `Log what was taken from ${code}`,
+        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
+        duration: 12,
+      })
+    }
   }
 
   const handleEditSave = async (values: LibraryPrepUpdate) => {

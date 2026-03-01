@@ -1,5 +1,5 @@
 import {
-  Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
+  Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, notification,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -10,6 +10,7 @@ import { Extraction, PCRSample, PCRSampleCreate, PCRSampleUpdate } from '../type
 import { useAuth } from '../context/AuthContext'
 import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
 import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
+import { useTesseraUrl } from '../hooks/useTesseraUrl'
 import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
 import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
 
@@ -26,6 +27,7 @@ export default function PCRRunDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  const tesseraUrl = useTesseraUrl()
   const { data: run, isLoading } = usePCRRun(runId)
   const { data: allExtractions } = useAllExtractions()
   const addSample = useAddPCRSample(runId)
@@ -55,6 +57,16 @@ export default function PCRRunDetailPage() {
     message.success('Sample added')
     addForm.resetFields()
     setAddModalOpen(false)
+    const code = values.specimen_code
+    if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
+      const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'pcr' })
+      notification.info({
+        message: 'Record usage in Tessera',
+        description: `Log what was taken from ${code}`,
+        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
+        duration: 12,
+      })
+    }
   }
 
   const handleEditSave = async (values: PCRSampleUpdate) => {
