@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.crud import extraction_run as crud
 from app.dependencies import get_current_user, get_db, require_admin
+from app.tessera_client import notify_unlink
 from app.schemas.extraction_run import (
     ExtractionCreate,
     ExtractionRead,
@@ -115,7 +116,9 @@ def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=
     sample = crud.get_sample(db, sample_id)
     if not sample or sample.run_id != run_id:
         raise HTTPException(status_code=404, detail="Sample not found")
+    specimen_code = sample.specimen_code
     crud.delete_sample(db, sample)
+    notify_unlink(db, specimen_code, str(run_id))
     return {"detail": "Deleted"}
 
 
