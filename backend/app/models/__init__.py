@@ -1,6 +1,7 @@
 from app.models.user import User
 from app.models.app_setting import AppSetting
 from app.models.protocol import Protocol
+from app.models.primer import Primer
 from app.models.extraction_run import ExtractionRun, Extraction
 from app.models.pcr_run import PCRRun, PCRSample
 from app.models.sanger_run import SangerRun, SangerSample
@@ -11,6 +12,7 @@ from app.models.run_attachment import RunAttachment
 __all__ = [
     "User",
     "Protocol",
+    "Primer",
     "ExtractionRun", "Extraction",
     "PCRRun", "PCRSample",
     "SangerRun", "SangerSample",

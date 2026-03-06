@@ -11,6 +11,7 @@ import {
   DashboardOutlined,
   DownloadOutlined,
   FileTextOutlined,
+  RetweetOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import React, { useEffect, useRef, useState } from 'react'
@@ -28,6 +29,7 @@ const menuItems = [
   { key: '/library-prep-runs', icon: <DatabaseOutlined />, label: 'Library Prep' },
   { key: '/ngs-runs', icon: <CloudServerOutlined />, label: 'NGS Runs' },
   { key: '/protocols', icon: <FileTextOutlined />, label: 'Protocols' },
+  { key: '/primers', icon: <RetweetOutlined />, label: 'Primers' },
   { key: '/export', icon: <DownloadOutlined />, label: 'Export' },
 ]
 

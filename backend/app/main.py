@@ -9,7 +9,7 @@ from app.database import Base, SessionLocal, engine
 from app.dependencies import get_current_user, get_db
 from app.routers import auth, users, ngs, setup, admin
 from app.routers import extraction_runs, pcr_runs, sanger_runs, library_prep_runs
-from app.routers import export, attachments, protocols
+from app.routers import export, attachments, protocols, primers
 
 
 def create_tables():
@@ -99,6 +99,7 @@ app.include_router(sanger_runs.router)
 app.include_router(library_prep_runs.router)
 app.include_router(ngs.router)
 app.include_router(protocols.router)
+app.include_router(primers.router)
 app.include_router(export.router)
 app.include_router(attachments.router)
 

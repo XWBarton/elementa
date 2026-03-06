@@ -362,6 +362,36 @@ export interface NGSRunCreate {
 
 export interface NGSRunUpdate extends Partial<NGSRunCreate> {}
 
+// ── Primers ──────────────────────────────────────────────────────
+
+export interface Primer {
+  id: number
+  name: string
+  sequence?: string
+  direction?: string
+  target_taxa?: string
+  target_gene?: string
+  annealing_temp_c?: number
+  product_size_bp?: number
+  reference?: string
+  notes?: string
+  created_at: string
+}
+
+export interface PrimerCreate {
+  name: string
+  sequence?: string
+  direction?: string
+  target_taxa?: string
+  target_gene?: string
+  annealing_temp_c?: number
+  product_size_bp?: number
+  reference?: string
+  notes?: string
+}
+
+export interface PrimerUpdate extends Partial<PrimerCreate> {}
+
 // ── Shared ───────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {
