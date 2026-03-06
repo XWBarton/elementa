@@ -30,8 +30,13 @@ def _get_settings_map(db: Session) -> dict[str, str]:
 
 
 def _server_url(url: str) -> str:
-    """Rewrite localhost → host.docker.internal so requests escape the container."""
-    import re
+    """Use TESSERA_INTERNAL_URL env var if set (for tunnelled/cloud deployments where
+    the public URL isn't reachable from inside Docker), otherwise rewrite
+    localhost → host.docker.internal so requests escape the container."""
+    import os, re
+    internal = os.environ.get("TESSERA_INTERNAL_URL", "").strip()
+    if internal:
+        return internal.rstrip("/")
     return re.sub(r"(?i)^(https?://)localhost\b", r"\1host.docker.internal", url.rstrip("/"))
 
 

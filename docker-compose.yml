@@ -8,6 +8,12 @@ services:
       FIRST_ADMIN_USERNAME: admin
       FIRST_ADMIN_PASSWORD: changeme123
       FIRST_ADMIN_EMAIL: admin@elementa.local
+      # For same-server / Cloudflare-tunnel deployments: set this to the internal
+      # port Tessera is reachable on from inside Docker (e.g. http://host.docker.internal:8520)
+      # so backend→backend calls bypass the public tunnel.
+      TESSERA_INTERNAL_URL: ${TESSERA_INTERNAL_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - elementa_data:/data
     ports:
