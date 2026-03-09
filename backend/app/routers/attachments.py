@@ -15,7 +15,7 @@ from app.models.user import User
 
 ATTACHMENT_DIR = Path("/data/attachments")
 VALID_RUN_TYPES = {"extraction", "pcr", "sanger", "library_prep", "ngs"}
-ATTACHMENT_ALLOWED = {".pdf", ".xlsx", ".xls", ".csv", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".docx", ".doc", ".zip"}
+ATTACHMENT_ALLOWED = {".pdf", ".xlsx", ".xls", ".csv", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".docx", ".doc", ".zip", ".fasta", ".fastq", ".fna", ".fq", ".fa", ".ab1", ".gbk", ".gff", ".vcf", ".bam", ".sam"}
 MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 
 router = APIRouter(prefix="/attachments", tags=["attachments"])
