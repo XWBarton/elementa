@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     FIRST_ADMIN_USERNAME: str = "admin"
     FIRST_ADMIN_PASSWORD: str = "changeme123"
     FIRST_ADMIN_EMAIL: str = "admin@elementa.local"
+    CORS_ORIGINS: str = ""
 
     class Config:
         env_file = ".env"

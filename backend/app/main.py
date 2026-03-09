@@ -81,9 +81,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Elementa", version="1.0.0", lifespan=lifespan)
 
+_cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()] if settings.CORS_ORIGINS else []
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins or ["http://localhost", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
