@@ -12,6 +12,7 @@ import {
   DownloadOutlined,
   FileTextOutlined,
   RetweetOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import React, { useEffect, useRef, useState } from 'react'
@@ -34,6 +35,7 @@ const menuItems = [
 ]
 
 const adminItem = { key: '/admin', icon: <SettingOutlined />, label: 'Settings' }
+const bottomItems = [{ key: '/help', icon: <QuestionCircleOutlined />, label: 'Help' }]
 
 export default function AppShell() {
   const navigate = useNavigate()
@@ -70,7 +72,7 @@ export default function AppShell() {
   const allItems = user?.is_admin ? [...menuItems, adminItem] : menuItems
 
   const selectedKey =
-    allItems
+    [...allItems, ...bottomItems]
       .slice()
       .reverse()
       .find((item) => item.key !== '/' ? location.pathname.startsWith(item.key) : location.pathname === '/')
@@ -78,7 +80,7 @@ export default function AppShell() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={220} style={{ background: '#fff', borderRight: '1px solid #e6f0ff' }}>
+      <Sider width={220} style={{ background: '#fff', borderRight: '1px solid #e6f0ff', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px', borderBottom: '1px solid #e6f0ff', textAlign: 'center' }}>
           <img
             src="/elementa-logo.png"
@@ -92,12 +94,21 @@ export default function AppShell() {
             Sample Tracking
           </Text>
         </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Menu
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={allItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderRight: 0, marginTop: 8 }}
+          />
+        </div>
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={allItems}
+          items={bottomItems}
           onClick={({ key }) => navigate(key)}
-          style={{ borderRight: 0, marginTop: 8 }}
+          style={{ borderRight: 0, borderTop: '1px solid #e6f0ff' }}
         />
       </Sider>
       <Layout>

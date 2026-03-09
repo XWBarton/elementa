@@ -40,6 +40,7 @@ import ProtocolDetailPage from './pages/ProtocolDetailPage'
 
 import PrimersPage from './pages/PrimersPage'
 import ExportPage from './pages/ExportPage'
+import HelpPage from './pages/HelpPage'
 
 export default function App() {
   return (
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="/primers" element={<PrimersPage />} />
 
             <Route path="/export" element={<ExportPage />} />
+            <Route path="/help" element={<HelpPage />} />
 
             <Route
               path="/admin"
