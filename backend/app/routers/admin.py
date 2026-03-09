@@ -92,9 +92,11 @@ def test_tessera(url: str = "", token: str = "", db: Session = Depends(get_db), 
         urllib.request.urlopen(req, timeout=8)
         return {"ok": True}
     except urllib.error.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Tessera responded with {e.code}: wrong token?")
+        raise HTTPException(status_code=502, detail="Tessera rejected the request — check the API token")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not reach Tessera: {e}")
+        import logging
+        logging.getLogger(__name__).error("Tessera connection failed: %s", e)
+        raise HTTPException(status_code=502, detail="Could not reach Tessera")
 
 
 @router.get("/tessera/search")
@@ -121,7 +123,9 @@ def search_tessera(q: str = "", db: Session = Depends(get_db), _=Depends(get_cur
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Tessera search failed: {e}")
+        import logging
+        logging.getLogger(__name__).error("Tessera search failed: %s", e)
+        raise HTTPException(status_code=502, detail="Could not reach Tessera")
 
 
 @router.post("/tessera/link")

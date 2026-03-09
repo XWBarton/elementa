@@ -15,6 +15,8 @@ from app.models.user import User
 
 ATTACHMENT_DIR = Path("/data/attachments")
 VALID_RUN_TYPES = {"extraction", "pcr", "sanger", "library_prep", "ngs"}
+ATTACHMENT_ALLOWED = {".pdf", ".xlsx", ".xls", ".csv", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".docx", ".doc", ".zip"}
+MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 
 router = APIRouter(prefix="/attachments", tags=["attachments"])
 
@@ -79,9 +81,19 @@ async def upload_attachment(
         raise HTTPException(status_code=400, detail="Invalid run type")
     ATTACHMENT_DIR.mkdir(parents=True, exist_ok=True)
     ext = Path(file.filename or "file").suffix.lower()
+    if ext not in ATTACHMENT_ALLOWED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type not allowed. Accepted: {', '.join(sorted(ATTACHMENT_ALLOWED))}",
+        )
+    contents = await file.read()
+    if len(contents) > MAX_ATTACHMENT_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_ATTACHMENT_SIZE_BYTES // (1024 * 1024)} MB",
+        )
     stored_name = f"{uuid.uuid4().hex}{ext}"
     dest = ATTACHMENT_DIR / stored_name
-    contents = await file.read()
     dest.write_bytes(contents)
     mime = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
     record = RunAttachment(

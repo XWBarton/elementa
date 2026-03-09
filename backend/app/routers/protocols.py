@@ -279,7 +279,9 @@ def download_pdf(
             raise HTTPException(status_code=500, detail="Typst is not installed on the server")
 
         if result.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"PDF generation failed: {result.stderr}")
+            import logging
+            logging.getLogger(__name__).error("Typst PDF generation failed: %s", result.stderr)
+            raise HTTPException(status_code=500, detail="PDF generation failed")
 
         pdf_bytes = pdf_path.read_bytes()
 
