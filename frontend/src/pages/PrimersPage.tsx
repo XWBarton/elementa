@@ -178,20 +178,19 @@ export default function PrimersPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>Primer Library</Typography.Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
+        <Typography.Title level={3} style={{ margin: 0, whiteSpace: 'nowrap' }}>Primer Library</Typography.Title>
+        <Input.Search
+          placeholder="Search by name, gene or taxa…"
+          allowClear
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ maxWidth: 340 }}
+        />
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           Add Primer
         </Button>
       </div>
-
-      <Input.Search
-        placeholder="Search by name, gene or taxa…"
-        allowClear
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={{ marginBottom: 16, maxWidth: 400 }}
-      />
 
       <Table
         dataSource={primers}
