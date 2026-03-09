@@ -411,4 +411,5 @@ export interface Stats {
   library_prep_runs: number
   library_preps: number
   ngs_runs: number
+  ngs_libraries: number
 }
