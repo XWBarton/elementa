@@ -16,7 +16,7 @@ export default function DashboardPage() {
     { title: 'PCR Runs', value: stats?.pcr_runs, sub: `${stats?.pcr_samples ?? 0} samples`, icon: <ThunderboltOutlined />, color: '#0ea5e9' },
     { title: 'Sanger Runs', value: stats?.sanger_runs, sub: `${stats?.sanger_samples ?? 0} samples`, icon: <AlignLeftOutlined />, color: '#7c3aed' },
     { title: 'Library Prep Runs', value: stats?.library_prep_runs, sub: `${stats?.library_preps ?? 0} preps`, icon: <DatabaseOutlined />, color: '#ea580c' },
-    { title: 'NGS Runs', value: stats?.ngs_runs, icon: <CloudServerOutlined />, color: '#db2777' },
+    { title: 'NGS Runs', value: stats?.ngs_runs, sub: `${stats?.ngs_libraries ?? 0} libraries`, icon: <CloudServerOutlined />, color: '#db2777' },
   ]
 
   const columns = [

@@ -124,7 +124,7 @@ def stats(db: Session = Depends(get_db), _=Depends(get_current_user)):
     from app.models.pcr_run import PCRRun, PCRSample
     from app.models.sanger_run import SangerRun, SangerSample
     from app.models.library_prep_run import LibraryPrepRun, LibraryPrep
-    from app.models.ngs_run import NGSRun
+    from app.models.ngs_run import NGSRun, NGSRunLibrary
 
     return {
         "extraction_runs": db.query(ExtractionRun).count(),
@@ -136,4 +136,5 @@ def stats(db: Session = Depends(get_db), _=Depends(get_current_user)):
         "library_prep_runs": db.query(LibraryPrepRun).count(),
         "library_preps": db.query(LibraryPrep).count(),
         "ngs_runs": db.query(NGSRun).count(),
+        "ngs_libraries": db.query(NGSRunLibrary).count(),
     }
