@@ -39,7 +39,7 @@ This document describes the security controls implemented in Elementa and is int
 |---|---|
 | **Input validation** | All API request bodies are validated by Pydantic v2 with strict type checking. Invalid inputs are rejected before reaching the database. |
 | **SQL injection** | All database queries use SQLAlchemy ORM with parameterised queries. Raw SQL is only used in startup migrations with no user-controlled input. |
-| **File uploads — attachments** | Uploaded attachments are validated by file extension (allowlist: `.pdf`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.docx`, `.doc`, `.zip`, `.fasta`, `.fastq`, `.fna`, `.fq`, `.fa`, `.ab1`, `.gbk`, `.gff`, `.vcf`, `.bam`, `.sam`). File size is capped at **50 MB**. Files are stored with a random UUID filename. |
+| **File uploads — attachments** | Uploaded attachments are validated by file extension (allowlist: `.pdf`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.docx`, `.doc`, `.zip`, `.fasta`, `.fastq`, `.fna`, `.fq`, `.fa`, `.ab1`, `.gbk`, `.gff`, `.vcf`, `.bam`, `.sam`, `.nwk`, `.newick`, `.tree`, `.bed`, `.gz`, `.tar`, `.tgz`). File size is capped at **50 MB**. Files are stored with a random UUID filename. |
 | **File uploads — avatars** | Avatar uploads are restricted to image formats (`.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`) and capped at **5 MB**. |
 | **Error messages** | Internal error details (subprocess output, connection exceptions) are logged server-side only and never returned to the client. |
 
