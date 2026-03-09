@@ -65,7 +65,7 @@ function SequenceViewer({ sequence }: { sequence: string }) {
       <Space style={{ marginBottom: 12 }}>
         <Tag>{upper.length} bp</Tag>
         <Tag color={gcPct < 30 || gcPct > 70 ? 'orange' : 'green'}>GC {gcPct}%</Tag>
-        <Button size="small" icon={<SearchOutlined />} onClick={() => openBlastn(sequence)}>BLASTn</Button>
+        <Button size="small" icon={<SearchOutlined />} onClick={() => openBlastn(sequence)}>BLAST</Button>
       </Space>
       <div style={{ fontFamily: 'monospace', fontSize: 13, lineHeight: '20px', overflowX: 'auto', background: '#fafafa', padding: 12, borderRadius: 6 }}>
         {Array.from({ length: Math.ceil(upper.length / ROW) }, (_, ri) => {
