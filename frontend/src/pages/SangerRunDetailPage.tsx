@@ -1,7 +1,7 @@
 import {
   Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, Upload, message, notification,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useAddSangerSample, useDeleteSangerRun, useDeleteSangerSample, useSangerRun, useUpdateSangerSample } from '../hooks/useSangerRuns'
@@ -50,6 +50,11 @@ const BASE_COLORS: Record<string, string> = {
   A: '#389e0d', T: '#cf1322', C: '#096dd9', G: '#434343', N: '#aaa',
 }
 
+function openBlastn(sequence: string) {
+  const url = `https://blast.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE_TYPE=BlastSearch&PROGRAM=blastn&QUERY=${encodeURIComponent(sequence)}`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
 function SequenceViewer({ sequence }: { sequence: string }) {
   const upper = sequence.toUpperCase()
   const gc = [...upper].filter(b => b === 'G' || b === 'C').length
@@ -60,6 +65,7 @@ function SequenceViewer({ sequence }: { sequence: string }) {
       <Space style={{ marginBottom: 12 }}>
         <Tag>{upper.length} bp</Tag>
         <Tag color={gcPct < 30 || gcPct > 70 ? 'orange' : 'green'}>GC {gcPct}%</Tag>
+        <Button size="small" icon={<SearchOutlined />} onClick={() => openBlastn(sequence)}>BLASTn</Button>
       </Space>
       <div style={{ fontFamily: 'monospace', fontSize: 13, lineHeight: '20px', overflowX: 'auto', background: '#fafafa', padding: 12, borderRadius: 6 }}>
         {Array.from({ length: Math.ceil(upper.length / ROW) }, (_, ri) => {
@@ -239,6 +245,7 @@ export default function SangerRunDetailPage() {
           <Space size={6}>
             <SeqPreview sequence={r.sequence} />
             <Button type="link" icon={<EyeOutlined />} size="small" style={{ padding: 0 }} onClick={() => setViewSeqSample(r)} />
+            <Button type="link" icon={<SearchOutlined />} size="small" style={{ padding: 0 }} title="BLASTn" onClick={() => openBlastn(r.sequence!)} />
           </Space>
         )
       },
