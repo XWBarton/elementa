@@ -1,5 +1,6 @@
 """Fire-and-forget helpers for notifying Tessera of Elementa events."""
 import json
+import logging
 import os
 import re
 import urllib.error
@@ -8,6 +9,8 @@ import urllib.request
 from sqlalchemy.orm import Session
 
 from app.models.app_setting import AppSetting
+
+log = logging.getLogger(__name__)
 
 
 def _get_tessera_url_and_token(db: Session) -> tuple[str, str]:
@@ -26,7 +29,13 @@ def notify_unlink(db: Session, specimen_code: str, elementa_ref: str) -> None:
     Silently does nothing if Tessera is not configured or unreachable."""
     try:
         url, token = _get_tessera_url_and_token(db)
-        if not url or not token or not specimen_code:
+        if not url:
+            log.warning("notify_unlink: Tessera URL not configured — skipping unlink for %s / %s", specimen_code, elementa_ref)
+            return
+        if not token:
+            log.warning("notify_unlink: Tessera API token not configured — skipping unlink for %s / %s", specimen_code, elementa_ref)
+            return
+        if not specimen_code:
             return
         data = json.dumps({"specimen_code": specimen_code, "elementa_ref": elementa_ref}).encode()
         req = urllib.request.Request(
@@ -35,6 +44,11 @@ def notify_unlink(db: Session, specimen_code: str, elementa_ref: str) -> None:
             method="DELETE",
             headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         )
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass  # never block the delete operation
+        resp = urllib.request.urlopen(req, timeout=5)
+        result = json.loads(resp.read())
+        log.info("notify_unlink: %s / %s → %s", specimen_code, elementa_ref, result)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        log.error("notify_unlink: HTTP %s from Tessera for %s / %s — %s", e.code, specimen_code, elementa_ref, body)
+    except Exception as e:
+        log.error("notify_unlink: unexpected error for %s / %s — %s", specimen_code, elementa_ref, e)
