@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Alert, Button, Form, Input, Modal, Space, Switch, Table, Tabs, Typography, message } from 'antd'
-import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, LockOutlined } from '@ant-design/icons'
 import { useUsers, useCreateUser, useUpdateUser } from '../hooks/useUsers'
 import { useAuth } from '../context/AuthContext'
 import { User } from '../types'
@@ -13,7 +13,9 @@ function UsersTab() {
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
   const [creating, setCreating] = useState(false)
+  const [resetUser, setResetUser] = useState<User | null>(null)
   const [form] = Form.useForm()
+  const [resetForm] = Form.useForm()
 
   async function handleCreate(values: Record<string, unknown>) {
     try {
@@ -23,6 +25,18 @@ function UsersTab() {
       form.resetFields()
     } catch {
       message.error('Failed to create user')
+    }
+  }
+
+  async function handleResetPassword({ password }: { password: string }) {
+    if (!resetUser) return
+    try {
+      await updateMutation.mutateAsync({ id: resetUser.id, payload: { password } })
+      message.success(`Password reset for ${resetUser.username}`)
+      setResetUser(null)
+      resetForm.resetFields()
+    } catch {
+      message.error('Failed to reset password')
     }
   }
 
@@ -62,6 +76,18 @@ function UsersTab() {
       ),
     },
     { title: 'Created', dataIndex: 'created_at', key: 'created_at', render: (v: string) => v?.slice(0, 10) },
+    {
+      title: '',
+      key: 'actions',
+      width: 140,
+      render: (_: unknown, row: User) => (
+        row.id !== currentUser?.id ? (
+          <Button size="small" icon={<LockOutlined />} onClick={() => { setResetUser(row); resetForm.resetFields() }}>
+            Reset Password
+          </Button>
+        ) : null
+      ),
+    },
   ]
 
   return (
@@ -94,6 +120,24 @@ function UsersTab() {
           </Form.Item>
           <Form.Item name="is_admin" label="Admin" valuePropName="checked">
             <Switch />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title={`Reset Password — ${resetUser?.username}`}
+        open={!!resetUser}
+        onCancel={() => { setResetUser(null); resetForm.resetFields() }}
+        footer={null}
+        destroyOnClose
+      >
+        <Form form={resetForm} layout="vertical" onFinish={handleResetPassword}>
+          <Form.Item name="password" label="New Password" rules={[{ required: true, min: 8 }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>
+              Reset Password
+            </Button>
           </Form.Item>
         </Form>
       </Modal>
