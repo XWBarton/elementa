@@ -142,7 +142,16 @@ export default function PCRRunDetailPage() {
       render: (_: unknown, record: PCRSample) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => { setEditSample(record); editForm.setFieldsValue(record) }} />
-          <Popconfirm title="Delete this sample?" onConfirm={() => deleteSample.mutateAsync(record.id).then(() => message.success('Deleted'))}>
+          <Popconfirm
+            title="Delete this sample?"
+            description={(() => {
+              const code = record.specimen_code || record.extraction?.specimen_code
+              return tesseraUrl && code && !['NTC', 'EXB'].includes(code)
+                ? 'This will unlink the specimen from its Tessera usage record. The usage record itself will not be deleted.'
+                : undefined
+            })()}
+            onConfirm={() => deleteSample.mutateAsync(record.id).then(() => message.success('Deleted'))}
+          >
             <Button type="link" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
@@ -158,7 +167,20 @@ export default function PCRRunDetailPage() {
           <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
           <Button onClick={() => navigate(`/pcr-runs/${runId}/edit`)}>Edit Run</Button>
           {user?.is_admin && (
-            <Popconfirm title="Delete this run?" onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/pcr-runs') })}>
+            <Popconfirm
+              title="Delete this run?"
+              description={(() => {
+                if (!tesseraUrl) return undefined
+                const n = run.samples.filter(s => {
+                  const code = s.specimen_code || s.extraction?.specimen_code
+                  return code && !['NTC', 'EXB'].includes(code)
+                }).length
+                return n > 0
+                  ? `${n} specimen${n === 1 ? '' : 's'} will be unlinked from their Tessera usage records. The usage records themselves will not be deleted.`
+                  : undefined
+              })()}
+              onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/pcr-runs') })}
+            >
               <Button danger>Delete Run</Button>
             </Popconfirm>
           )}

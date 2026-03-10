@@ -185,7 +185,13 @@ export default function ExtractionRunDetailPage() {
               editForm.setFieldsValue(record)
             }}
           />
-          <Popconfirm title="Delete this sample?" onConfirm={() => handleDeleteSample(record.id)}>
+          <Popconfirm
+            title="Delete this sample?"
+            description={tesseraUrl && record.specimen_code && !['NTC', 'EXB'].includes(record.specimen_code)
+              ? 'This will unlink the specimen from its Tessera usage record. The usage record itself will not be deleted.'
+              : undefined}
+            onConfirm={() => handleDeleteSample(record.id)}
+          >
             <Button type="link" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
@@ -203,7 +209,17 @@ export default function ExtractionRunDetailPage() {
           <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
           <Button onClick={() => navigate(`/extraction-runs/${runId}/edit`)}>Edit Run</Button>
           {user?.is_admin && (
-            <Popconfirm title="Delete this run and all its samples?" onConfirm={handleDeleteRun}>
+            <Popconfirm
+              title="Delete this run and all its samples?"
+              description={(() => {
+                if (!tesseraUrl) return undefined
+                const n = run.samples.filter(s => s.specimen_code && !['NTC', 'EXB'].includes(s.specimen_code)).length
+                return n > 0
+                  ? `${n} specimen${n === 1 ? '' : 's'} will be unlinked from their Tessera usage records. The usage records themselves will not be deleted.`
+                  : undefined
+              })()}
+              onConfirm={handleDeleteRun}
+            >
               <Button danger>Delete Run</Button>
             </Popconfirm>
           )}

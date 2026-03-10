@@ -71,7 +71,10 @@ def delete_run(run_id: int, db: Session = Depends(get_db), _=Depends(require_adm
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="PCR run not found")
+    specimen_codes = [s.specimen_code for s in obj.samples if s.specimen_code]
     crud.delete_run(db, obj)
+    for code in specimen_codes:
+        notify_unlink(db, code, str(run_id))
     return {"detail": "Deleted"}
 
 
