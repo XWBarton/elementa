@@ -213,7 +213,7 @@ export default function ExtractionRunDetailPage() {
               title="Delete this run and all its samples?"
               description={(() => {
                 if (!tesseraUrl) return undefined
-                const n = run.samples.filter(s => s.specimen_code && !['NTC', 'EXB'].includes(s.specimen_code)).length
+                const n = (run.samples ?? []).filter(s => s.specimen_code && !['NTC', 'EXB'].includes(s.specimen_code)).length
                 return n > 0
                   ? `${n} specimen${n === 1 ? '' : 's'} will be unlinked from their Tessera usage records. The usage records themselves will not be deleted.`
                   : undefined

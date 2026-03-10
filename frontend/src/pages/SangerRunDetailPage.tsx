@@ -337,7 +337,7 @@ export default function SangerRunDetailPage() {
               title="Delete this run?"
               description={(() => {
                 if (!tesseraUrl) return undefined
-                const n = run.samples.filter(s => {
+                const n = (run.samples ?? []).filter(s => {
                   const code = s.specimen_code || s.pcr_sample?.specimen_code
                   return code && !['NTC', 'EXB'].includes(code)
                 }).length

@@ -171,7 +171,7 @@ export default function PCRRunDetailPage() {
               title="Delete this run?"
               description={(() => {
                 if (!tesseraUrl) return undefined
-                const n = run.samples.filter(s => {
+                const n = (run.samples ?? []).filter(s => {
                   const code = s.specimen_code || s.extraction?.specimen_code
                   return code && !['NTC', 'EXB'].includes(code)
                 }).length
