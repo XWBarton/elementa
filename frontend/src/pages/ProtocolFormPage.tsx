@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   Form,
@@ -15,7 +16,7 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from '@ant-design/icons'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useCreateProtocol, useProtocol, useUpdateProtocol } from '../hooks/useProtocols'
 import type { ProtocolCreate, ProtocolStep } from '../types'
@@ -33,11 +34,14 @@ export default function ProtocolFormPage() {
   const { id } = useParams()
   const isEdit = !!id
   const navigate = useNavigate()
+  const location = useLocation()
   const [form] = Form.useForm()
 
   const { data: protocol } = useProtocol(isEdit ? Number(id) : 0)
   const createProtocol = useCreateProtocol()
   const updateProtocol = useUpdateProtocol(Number(id))
+
+  const importedProtocol = (location.state as { importedProtocol?: ProtocolCreate } | null)?.importedProtocol
 
   useEffect(() => {
     if (protocol && isEdit) {
@@ -45,8 +49,13 @@ export default function ProtocolFormPage() {
         ...protocol,
         materials: protocol.materials?.join('\n') ?? '',
       })
+    } else if (importedProtocol && !isEdit) {
+      form.setFieldsValue({
+        ...importedProtocol,
+        materials: importedProtocol.materials?.join('\n') ?? '',
+      })
     }
-  }, [protocol, isEdit, form])
+  }, [protocol, isEdit, importedProtocol, form])
 
   const onFinish = async (values: Record<string, unknown>) => {
     const steps: ProtocolStep[] = ((values.steps as ProtocolStep[] | undefined) ?? []).map(
@@ -84,6 +93,14 @@ export default function ProtocolFormPage() {
           {isEdit ? 'Edit Protocol' : 'New Protocol'}
         </Typography.Title>
       </Space>
+      {importedProtocol && !isEdit && (
+        <Alert
+          type="info"
+          showIcon
+          message="Pre-filled from imported text — review all fields before saving."
+          style={{ marginBottom: 16 }}
+        />
+      )}
       <Card>
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <Form.Item label="Name" name="name" rules={[{ required: true, message: 'Name is required' }]}>
