@@ -19,3 +19,8 @@ export const updatePrimer = async (id: number, data: PrimerUpdate): Promise<Prim
 export const deletePrimer = async (id: number): Promise<void> => {
   await client.delete(`/primers/${id}`)
 }
+
+export const bulkCreatePrimers = async (data: PrimerCreate[]): Promise<Primer[]> => {
+  const { data: res } = await client.post<Primer[]>('/primers/bulk', data)
+  return res
+}

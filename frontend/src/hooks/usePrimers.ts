@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPrimers, createPrimer, updatePrimer, deletePrimer } from '../api/primers'
+import { getPrimers, createPrimer, updatePrimer, deletePrimer, bulkCreatePrimers } from '../api/primers'
 import type { PrimerCreate, PrimerUpdate } from '../types'
+
+export const useBulkCreatePrimers = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: PrimerCreate[]) => bulkCreatePrimers(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['primers'] }),
+  })
+}
 
 export const usePrimers = (q?: string) =>
   useQuery({ queryKey: ['primers', q], queryFn: () => getPrimers(q) })

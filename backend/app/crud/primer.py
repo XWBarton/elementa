@@ -39,3 +39,12 @@ def update_primer(db: Session, primer: Primer, data: PrimerUpdate) -> Primer:
 def delete_primer(db: Session, primer: Primer) -> None:
     db.delete(primer)
     db.commit()
+
+
+def bulk_create_primers(db: Session, primers_data: List[PrimerCreate]) -> List[Primer]:
+    primers = [Primer(**data.model_dump()) for data in primers_data]
+    db.add_all(primers)
+    db.commit()
+    for p in primers:
+        db.refresh(p)
+    return primers

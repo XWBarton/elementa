@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.crud.primer import get_primers, get_primer, create_primer, update_primer, delete_primer
+from app.crud.primer import get_primers, get_primer, create_primer, update_primer, delete_primer, bulk_create_primers
 from app.dependencies import get_current_user, get_db, require_admin
 from app.schemas.primer import PrimerCreate, PrimerRead, PrimerUpdate
 
@@ -17,6 +17,13 @@ def list_primers(q: Optional[str] = None, db: Session = Depends(get_db), _=Depen
 @router.post("/", response_model=PrimerRead)
 def create(data: PrimerCreate, db: Session = Depends(get_db), _=Depends(get_current_user)):
     return create_primer(db, data)
+
+
+@router.post("/bulk", response_model=List[PrimerRead])
+def bulk_create(data: List[PrimerCreate], db: Session = Depends(get_db), _=Depends(get_current_user)):
+    if not data:
+        raise HTTPException(status_code=400, detail="No primers provided")
+    return bulk_create_primers(db, data)
 
 
 @router.get("/{primer_id}", response_model=PrimerRead)

@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Typography, Table, Button, Modal, Form, Input, InputNumber,
-  Space, message, Popconfirm, Tag, Select, Tooltip,
+  Space, message, Popconfirm, Tag, Select, Tooltip, Alert,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons'
-import { usePrimers, useCreatePrimer, useUpdatePrimer, useDeletePrimer } from '../hooks/usePrimers'
+import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, UnorderedListOutlined } from '@ant-design/icons'
+import { usePrimers, useCreatePrimer, useUpdatePrimer, useDeletePrimer, useBulkCreatePrimers } from '../hooks/usePrimers'
 import { useAuth } from '../context/AuthContext'
 import type { Primer, PrimerCreate } from '../types'
 
@@ -12,6 +12,174 @@ const DIRECTION_OPTIONS = [
   { value: 'F', label: 'F — Forward' },
   { value: 'R', label: 'R — Reverse' },
 ]
+
+const BULK_TEMPLATE = `name\tdirection\tsequence\ttarget_gene\ttarget_taxa\tannealing_temp_c\tproduct_size_bp\treference\tnotes
+16S-F\tF\tAGAGTTTGATCMTGGCTCAG\t16S rRNA\tBacteria\t55\t1500\tLane 1991\t
+16S-R\tR\tGGTTACCTTGTTACGACTT\t16S rRNA\tBacteria\t55\t1500\tLane 1991\t`
+
+const COLUMN_HEADERS: Record<string, keyof PrimerCreate> = {
+  name: 'name',
+  direction: 'direction',
+  sequence: 'sequence',
+  target_gene: 'target_gene',
+  target_taxa: 'target_taxa',
+  annealing_temp_c: 'annealing_temp_c',
+  product_size_bp: 'product_size_bp',
+  reference: 'reference',
+  notes: 'notes',
+}
+
+function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] } {
+  const lines = text.trim().split('\n').filter(l => l.trim())
+  if (lines.length < 2) return { rows: [], errors: ['Paste at least a header row and one data row.'] }
+
+  const delimiter = lines[0].includes('\t') ? '\t' : ','
+  const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase())
+
+  const errors: string[] = []
+  const rows: PrimerCreate[] = []
+
+  for (let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split(delimiter)
+    const obj: Record<string, string | number | undefined> = {}
+
+    headers.forEach((h, idx) => {
+      const field = COLUMN_HEADERS[h]
+      if (!field) return
+      const val = cells[idx]?.trim()
+      if (!val) return
+      if (field === 'annealing_temp_c') {
+        const n = parseFloat(val)
+        obj[field] = isNaN(n) ? undefined : n
+      } else if (field === 'product_size_bp') {
+        const n = parseInt(val, 10)
+        obj[field] = isNaN(n) ? undefined : n
+      } else {
+        obj[field] = val
+      }
+    })
+
+    if (!obj['name']) {
+      errors.push(`Row ${i + 1}: missing required "name" column`)
+      continue
+    }
+
+    rows.push(obj as unknown as PrimerCreate)
+  }
+
+  return { rows, errors }
+}
+
+function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [text, setText] = useState('')
+  const bulkCreate = useBulkCreatePrimers()
+
+  const { rows, errors } = useMemo(() => parseBulkText(text), [text])
+
+  const handleSubmit = async () => {
+    if (!rows.length) return
+    try {
+      const created = await bulkCreate.mutateAsync(rows)
+      message.success(`Added ${created.length} primer${created.length !== 1 ? 's' : ''}`)
+      setText('')
+      onClose()
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string } } }
+      message.error(err.response?.data?.detail || 'Failed to add primers')
+    }
+  }
+
+  const handleClose = () => {
+    setText('')
+    onClose()
+  }
+
+  const previewColumns = [
+    { title: 'Name', dataIndex: 'name', key: 'name', render: (v: string) => <strong style={{ fontFamily: 'monospace' }}>{v}</strong> },
+    { title: 'Dir', dataIndex: 'direction', key: 'direction', width: 50, render: (v: string) => v ? <Tag color={v === 'F' ? 'blue' : 'volcano'}>{v}</Tag> : null },
+    { title: 'Sequence', dataIndex: 'sequence', key: 'sequence', render: (v: string) => v ? <Typography.Text code style={{ fontSize: 11 }}>{v}</Typography.Text> : <span style={{ color: '#bbb' }}>—</span> },
+    { title: 'Target Gene', dataIndex: 'target_gene', key: 'target_gene', render: (v: string) => v || <span style={{ color: '#bbb' }}>—</span> },
+    { title: 'Target Taxa', dataIndex: 'target_taxa', key: 'target_taxa', render: (v: string) => v || <span style={{ color: '#bbb' }}>—</span> },
+    { title: 'Ta (°C)', dataIndex: 'annealing_temp_c', key: 'annealing_temp_c', width: 70, render: (v: number) => v != null ? `${v}°C` : <span style={{ color: '#bbb' }}>—</span> },
+  ]
+
+  return (
+    <Modal
+      title="Bulk Add Primers"
+      open={open}
+      onCancel={handleClose}
+      width={800}
+      destroyOnClose
+      footer={
+        <Space>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button
+            type="primary"
+            onClick={handleSubmit}
+            loading={bulkCreate.isPending}
+            disabled={rows.length === 0}
+          >
+            Add {rows.length > 0 ? `${rows.length} Primer${rows.length !== 1 ? 's' : ''}` : 'Primers'}
+          </Button>
+        </Space>
+      }
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required column: <Typography.Text code>name</Typography.Text>.
+          Optional: <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>, <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>, <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
+        </Typography.Text>
+
+        <div>
+          <Space style={{ marginBottom: 4 }}>
+            <Typography.Text style={{ fontSize: 12 }}>Paste data here:</Typography.Text>
+            <Button
+              size="small"
+              type="link"
+              style={{ padding: 0, fontSize: 12 }}
+              onClick={() => setText(BULK_TEMPLATE)}
+            >
+              Load example
+            </Button>
+          </Space>
+          <Input.TextArea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={6}
+            placeholder={'name\tdirection\tsequence\ttarget_gene\n16S-F\tF\tAGAGTTTGATCMTGGCTCAG\t16S rRNA'}
+            style={{ fontFamily: 'monospace', fontSize: 12 }}
+          />
+        </div>
+
+        {errors.length > 0 && (
+          <Alert
+            type="warning"
+            message="Parsing issues"
+            description={<ul style={{ margin: 0, paddingLeft: 16 }}>{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
+            showIcon
+          />
+        )}
+
+        {rows.length > 0 && (
+          <div>
+            <Typography.Text style={{ fontSize: 12 }} type="secondary">
+              Preview — {rows.length} row{rows.length !== 1 ? 's' : ''} ready to import:
+            </Typography.Text>
+            <Table
+              dataSource={rows}
+              columns={previewColumns}
+              rowKey="name"
+              size="small"
+              pagination={false}
+              style={{ marginTop: 6 }}
+              scroll={{ y: 200 }}
+            />
+          </div>
+        )}
+      </Space>
+    </Modal>
+  )
+}
 
 function PrimerForm({
   onFinish,
@@ -83,6 +251,7 @@ export default function PrimersPage() {
   const createPrimer = useCreatePrimer()
   const deletePrimer = useDeletePrimer()
   const [createOpen, setCreateOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [editingPrimer, setEditingPrimer] = useState<Primer | null>(null)
   const updatePrimer = useUpdatePrimer(editingPrimer?.id ?? 0)
 
@@ -187,9 +356,14 @@ export default function PrimersPage() {
           onChange={e => setSearch(e.target.value)}
           style={{ maxWidth: 340 }}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-          Add Primer
-        </Button>
+        <Space>
+          <Button icon={<UnorderedListOutlined />} onClick={() => setBulkOpen(true)}>
+            Bulk Add
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            Add Primer
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -264,6 +438,8 @@ export default function PrimersPage() {
           />
         )}
       </Modal>
+
+      <BulkAddModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
     </div>
   )
 }
