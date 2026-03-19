@@ -59,7 +59,7 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
       }
     })
 
-    const requiredFields = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa', 'annealing_temp_c', 'product_size_bp', 'reference'] as const
+    const requiredFields = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa', 'annealing_temp_c', 'product_size_bp'] as const
     const missing = requiredFields.filter(f => obj[f] == null || obj[f] === '')
     if (missing.length > 0) {
       errors.push(`Row ${i + 1}: missing required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`)
@@ -128,8 +128,8 @@ function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void })
     >
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required columns: <Typography.Text code>name</Typography.Text>, <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>, <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>, <Typography.Text code>reference</Typography.Text>.
-          Optional: <Typography.Text code>notes</Typography.Text>.
+          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required columns: <Typography.Text code>name</Typography.Text>, <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>, <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>.
+          Optional: <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
         </Typography.Text>
 
         <div>
@@ -242,7 +242,7 @@ function PrimerForm({
           </Form.Item>
         </Space.Compact>
 
-        <Form.Item name="reference" label="Reference / Source" rules={[{ required: true }]}>
+        <Form.Item name="reference" label="Reference / Source">
           <Input placeholder="e.g. Lane 1991, DOI, or kit name" />
         </Form.Item>
 
