@@ -434,6 +434,12 @@ export interface NGSRunUpdate extends Partial<NGSRunCreate> {}
 
 // ── Primers ──────────────────────────────────────────────────────
 
+export interface PrimerPair {
+  id: number
+  name: string
+  direction?: string
+}
+
 export interface Primer {
   id: number
   name: string
@@ -445,6 +451,7 @@ export interface Primer {
   product_size_bp?: number
   reference?: string
   notes?: string
+  pairs: PrimerPair[]
   created_at: string
 }
 
@@ -458,6 +465,7 @@ export interface PrimerCreate {
   product_size_bp?: number
   reference?: string
   notes?: string
+  pair_ids?: number[]
 }
 
 export interface PrimerUpdate extends Partial<PrimerCreate> {}

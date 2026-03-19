@@ -1,9 +1,17 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy import Integer, String, Float, Text, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional, List
+from sqlalchemy import Integer, String, Float, Text, DateTime, Table, Column, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
+
+
+primer_pairs = Table(
+    "primer_pairs",
+    Base.metadata,
+    Column("primer_id", Integer, ForeignKey("primers.id", ondelete="CASCADE"), primary_key=True),
+    Column("paired_primer_id", Integer, ForeignKey("primers.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Primer(Base):
@@ -20,3 +28,10 @@ class Primer(Base):
     reference: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    pairs: Mapped[List[Primer]] = relationship(
+        "Primer",
+        secondary=primer_pairs,
+        primaryjoin=id == primer_pairs.c.primer_id,
+        secondaryjoin=id == primer_pairs.c.paired_primer_id,
+    )

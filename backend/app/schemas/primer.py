@@ -1,7 +1,16 @@
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
+
+
+class PrimerPairRead(BaseModel):
+    id: int
+    name: str
+    direction: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class PrimerCreate(BaseModel):
@@ -14,6 +23,7 @@ class PrimerCreate(BaseModel):
     product_size_bp: Optional[int] = None
     reference: Optional[str] = None
     notes: Optional[str] = None
+    pair_ids: List[int] = []
 
 
 class PrimerUpdate(BaseModel):
@@ -26,6 +36,7 @@ class PrimerUpdate(BaseModel):
     product_size_bp: Optional[int] = None
     reference: Optional[str] = None
     notes: Optional[str] = None
+    pair_ids: Optional[List[int]] = None
 
 
 class PrimerRead(BaseModel):
@@ -39,6 +50,7 @@ class PrimerRead(BaseModel):
     product_size_bp: Optional[int] = None
     reference: Optional[str] = None
     notes: Optional[str] = None
+    pairs: List[PrimerPairRead] = []
     created_at: datetime
 
     class Config:

@@ -59,8 +59,10 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
       }
     })
 
-    if (!obj['name']) {
-      errors.push(`Row ${i + 1}: missing required "name" column`)
+    const requiredFields = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa', 'annealing_temp_c', 'product_size_bp', 'reference'] as const
+    const missing = requiredFields.filter(f => obj[f] == null || obj[f] === '')
+    if (missing.length > 0) {
+      errors.push(`Row ${i + 1}: missing required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`)
       continue
     }
 
@@ -126,8 +128,8 @@ function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void })
     >
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required column: <Typography.Text code>name</Typography.Text>.
-          Optional: <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>, <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>, <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
+          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required columns: <Typography.Text code>name</Typography.Text>, <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>, <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>, <Typography.Text code>reference</Typography.Text>.
+          Optional: <Typography.Text code>notes</Typography.Text>.
         </Typography.Text>
 
         <div>
@@ -185,25 +187,37 @@ function PrimerForm({
   onFinish,
   loading,
   initialValues,
+  currentId,
 }: {
   onFinish: (v: PrimerCreate) => void
   loading: boolean
   initialValues?: Partial<Primer>
+  currentId?: number
 }) {
+  const { data: allPrimers } = usePrimers()
   const [form] = Form.useForm()
+
+  const pairOptions = (allPrimers ?? [])
+    .filter(p => p.id !== currentId)
+    .map(p => ({ label: `${p.name}${p.direction ? ` (${p.direction})` : ''}`, value: p.id }))
+
+  const formInitialValues = initialValues
+    ? { ...initialValues, pair_ids: initialValues.pairs?.map(p => p.id) ?? [] }
+    : undefined
+
   return (
-    <Form form={form} layout="vertical" onFinish={onFinish} initialValues={initialValues}>
+    <Form form={form} layout="vertical" onFinish={onFinish} initialValues={formInitialValues}>
       <Space style={{ width: '100%' }} direction="vertical" size={0}>
         <Space.Compact style={{ width: '100%' }}>
           <Form.Item name="name" label="Primer Name" rules={[{ required: true }]} style={{ flex: 1, marginRight: 8 }}>
             <Input placeholder="e.g. 16S-F" />
           </Form.Item>
-          <Form.Item name="direction" label="Direction" style={{ width: 160 }}>
-            <Select options={DIRECTION_OPTIONS} allowClear placeholder="F / R" />
+          <Form.Item name="direction" label="Direction" rules={[{ required: true }]} style={{ width: 160 }}>
+            <Select options={DIRECTION_OPTIONS} placeholder="F / R" />
           </Form.Item>
         </Space.Compact>
 
-        <Form.Item name="sequence" label="Sequence (5′→3′)">
+        <Form.Item name="sequence" label="Sequence (5′→3′)" rules={[{ required: true }]}>
           <Input
             placeholder="e.g. AGAGTTTGATCMTGGCTCAG"
             style={{ fontFamily: 'monospace', letterSpacing: 1 }}
@@ -211,25 +225,36 @@ function PrimerForm({
         </Form.Item>
 
         <Space.Compact style={{ width: '100%' }}>
-          <Form.Item name="target_gene" label="Target Gene / Region" style={{ flex: 1, marginRight: 8 }}>
+          <Form.Item name="target_gene" label="Target Gene / Region" rules={[{ required: true }]} style={{ flex: 1, marginRight: 8 }}>
             <Input placeholder="e.g. 16S rRNA, COI, ITS1" />
           </Form.Item>
-          <Form.Item name="target_taxa" label="Target Taxa" style={{ flex: 1 }}>
+          <Form.Item name="target_taxa" label="Target Taxa" rules={[{ required: true }]} style={{ flex: 1 }}>
             <Input placeholder="e.g. Bacteria, Amphibia" />
           </Form.Item>
         </Space.Compact>
 
         <Space.Compact style={{ width: '100%' }}>
-          <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)" style={{ flex: 1, marginRight: 8 }}>
+          <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)" rules={[{ required: true }]} style={{ flex: 1, marginRight: 8 }}>
             <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.5} placeholder="e.g. 55" />
           </Form.Item>
-          <Form.Item name="product_size_bp" label="Product Size (bp)" style={{ flex: 1 }}>
+          <Form.Item name="product_size_bp" label="Product Size (bp)" rules={[{ required: true }]} style={{ flex: 1 }}>
             <InputNumber style={{ width: '100%' }} min={0} step={1} placeholder="e.g. 450" />
           </Form.Item>
         </Space.Compact>
 
-        <Form.Item name="reference" label="Reference / Source">
+        <Form.Item name="reference" label="Reference / Source" rules={[{ required: true }]}>
           <Input placeholder="e.g. Lane 1991, DOI, or kit name" />
+        </Form.Item>
+
+        <Form.Item name="pair_ids" label="Pairs with">
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Select compatible primers…"
+            options={pairOptions}
+          />
         </Form.Item>
 
         <Form.Item name="notes" label="Notes">
@@ -389,6 +414,18 @@ export default function PrimersPage() {
                   </Tooltip>
                 </div>
               )}
+              {record.pairs?.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12, minWidth: 80 }}>Pairs with:</Typography.Text>
+                  <Space size={4} wrap>
+                    {record.pairs.map(p => (
+                      <Tag key={p.id} color={p.direction === 'F' ? 'blue' : p.direction === 'R' ? 'volcano' : 'default'}>
+                        {p.name}{p.direction ? ` (${p.direction})` : ''}
+                      </Tag>
+                    ))}
+                  </Space>
+                </div>
+              )}
               {record.reference && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12, minWidth: 80 }}>Reference:</Typography.Text>
@@ -401,7 +438,7 @@ export default function PrimersPage() {
                   <Typography.Text style={{ fontSize: 12 }}>{record.notes}</Typography.Text>
                 </div>
               )}
-              {!record.sequence && !record.reference && !record.notes && (
+              {!record.sequence && !record.pairs?.length && !record.reference && !record.notes && (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>No additional details recorded.</Typography.Text>
               )}
             </div>
@@ -435,6 +472,7 @@ export default function PrimersPage() {
             onFinish={handleEdit}
             loading={updatePrimer.isPending}
             initialValues={editingPrimer}
+            currentId={editingPrimer.id}
           />
         )}
       </Modal>
