@@ -315,7 +315,7 @@ export default function PrimersPage() {
       render: (v: number) => v != null ? `${v}°C` : <span style={{ color: '#bbb' }}>—</span>,
     },
     {
-      title: 'Product (bp)',
+      title: 'Product',
       dataIndex: 'product_size_bp',
       key: 'product_size_bp',
       width: 100,
