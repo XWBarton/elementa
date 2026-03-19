@@ -1,4 +1,4 @@
-import { Button, Card, DatePicker, Form, Input, Select, Space, Typography, message } from 'antd'
+import { AutoComplete, Button, Card, DatePicker, Form, Input, Select, Space, Typography, message } from 'antd'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import dayjs from 'dayjs'
@@ -6,6 +6,7 @@ import { useCreateSangerRun, useSangerRun, useUpdateSangerRun } from '../hooks/u
 import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
+import { usePrimers } from '../hooks/usePrimers'
 import { SangerRunCreate } from '../types'
 
 export default function SangerRunFormPage() {
@@ -18,6 +19,12 @@ export default function SangerRunFormPage() {
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
   const { data: protocols } = useAllProtocols()
+  const { data: primers } = usePrimers()
+
+  const primerOptions = (primers ?? []).map(p => ({
+    label: `${p.name}${p.direction ? ` (${p.direction})` : ''}${p.target_gene ? ` — ${p.target_gene}` : ''}`,
+    value: p.name,
+  }))
   const createRun = useCreateSangerRun()
   const updateRun = useUpdateSangerRun()
 
@@ -68,7 +75,14 @@ export default function SangerRunFormPage() {
               })) ?? []}
             />
           </Form.Item>
-          <Form.Item label="Primer" name="primer"><Input placeholder="Primer name or sequence" /></Form.Item>
+          <Form.Item label="Primer" name="primer">
+            <AutoComplete
+              allowClear
+              placeholder="Search primer library or type name…"
+              options={primerOptions}
+              filterOption={(input, option) => option?.label.toLowerCase().includes(input.toLowerCase()) ?? false}
+            />
+          </Form.Item>
           <Form.Item label="Direction" name="direction">
             <Select allowClear options={[
               { label: 'Forward', value: 'forward' },

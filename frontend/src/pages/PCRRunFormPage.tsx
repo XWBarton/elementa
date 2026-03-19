@@ -1,4 +1,4 @@
-import { Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography, message } from 'antd'
+import { AutoComplete, Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography, message } from 'antd'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import dayjs from 'dayjs'
@@ -6,6 +6,7 @@ import { useCreatePCRRun, usePCRRun, useUpdatePCRRun } from '../hooks/usePCRRuns
 import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
+import { usePrimers } from '../hooks/usePrimers'
 import { PCRRunCreate } from '../types'
 
 export default function PCRRunFormPage() {
@@ -18,6 +19,10 @@ export default function PCRRunFormPage() {
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
   const { data: protocols } = useAllProtocols()
+  const { data: primers } = usePrimers()
+
+  const fPrimerOptions = (primers ?? []).filter(p => p.direction === 'F').map(p => ({ label: `${p.name} — ${p.target_gene ?? ''}`, value: p.name }))
+  const rPrimerOptions = (primers ?? []).filter(p => p.direction === 'R').map(p => ({ label: `${p.name} — ${p.target_gene ?? ''}`, value: p.name }))
   const createRun = useCreatePCRRun()
   const updateRun = useUpdatePCRRun()
 
@@ -69,8 +74,22 @@ export default function PCRRunFormPage() {
             />
           </Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. 16S rRNA" /></Form.Item>
-          <Form.Item label="Forward Primer" name="primer_f"><Input placeholder="Primer F sequence or name" /></Form.Item>
-          <Form.Item label="Reverse Primer" name="primer_r"><Input placeholder="Primer R sequence or name" /></Form.Item>
+          <Form.Item label="Forward Primer" name="primer_f">
+            <AutoComplete
+              allowClear
+              placeholder="Search primer library or type name…"
+              options={fPrimerOptions}
+              filterOption={(input, option) => option?.label.toLowerCase().includes(input.toLowerCase()) ?? false}
+            />
+          </Form.Item>
+          <Form.Item label="Reverse Primer" name="primer_r">
+            <AutoComplete
+              allowClear
+              placeholder="Search primer library or type name…"
+              options={rPrimerOptions}
+              filterOption={(input, option) => option?.label.toLowerCase().includes(input.toLowerCase()) ?? false}
+            />
+          </Form.Item>
           <Form.Item label="Polymerase" name="polymerase"><Input placeholder="e.g. Taq, Q5, Phusion" /></Form.Item>
           <Form.Item label="Amplicon Size (bp)" name="amplicon_size_bp">
             <InputNumber min={0} style={{ width: '100%' }} />
