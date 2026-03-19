@@ -23,15 +23,20 @@ import { uploadAvatar, getAvatarBlob } from '../../api/users'
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
-const menuItems = [
-  { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
+const workflowItems = [
   { key: '/extraction-runs', icon: <ExperimentOutlined />, label: 'Extractions' },
   { key: '/pcr-runs', icon: <ThunderboltOutlined />, label: 'PCR' },
   { key: '/sanger-runs', icon: <AlignLeftOutlined />, label: 'Sanger' },
   { key: '/library-prep-runs', icon: <DatabaseOutlined />, label: 'Library Prep' },
   { key: '/ngs-runs', icon: <CloudServerOutlined />, label: 'NGS Runs' },
+]
+
+const referenceItems = [
   { key: '/protocols', icon: <FileTextOutlined />, label: 'Protocols' },
   { key: '/primers', icon: <RetweetOutlined />, label: 'Primers' },
+]
+
+const manageItems = [
   { key: '/export', icon: <DownloadOutlined />, label: 'Export' },
 ]
 
@@ -39,7 +44,21 @@ const adminItems = [
   { key: '/projects', icon: <FolderOutlined />, label: 'Projects' },
   { key: '/admin', icon: <SettingOutlined />, label: 'Settings' },
 ]
+
 const bottomItems = [{ key: '/help', icon: <QuestionCircleOutlined />, label: 'Help' }]
+
+function buildMenuItems(isAdmin: boolean) {
+  return [
+    { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
+    { type: 'group' as const, label: 'Workflows', children: workflowItems },
+    { type: 'group' as const, label: 'Reference', children: referenceItems },
+    {
+      type: 'group' as const,
+      label: 'Manage',
+      children: isAdmin ? [...manageItems, ...adminItems] : manageItems,
+    },
+  ]
+}
 
 export default function AppShell() {
   const navigate = useNavigate()
@@ -73,10 +92,17 @@ export default function AppShell() {
     e.target.value = ''
   }
 
-  const allItems = user?.is_admin ? [...menuItems, ...adminItems] : menuItems
+  const allItems = buildMenuItems(!!user?.is_admin)
+
+  const allLeafKeys = [
+    { key: '/' },
+    ...workflowItems, ...referenceItems, ...manageItems,
+    ...(user?.is_admin ? adminItems : []),
+    ...bottomItems,
+  ]
 
   const selectedKey =
-    [...allItems, ...bottomItems]
+    allLeafKeys
       .slice()
       .reverse()
       .find((item) => item.key !== '/' ? location.pathname.startsWith(item.key) : location.pathname === '/')
