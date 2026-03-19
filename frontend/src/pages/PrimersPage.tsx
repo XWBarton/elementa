@@ -38,6 +38,7 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
 
   const errors: string[] = []
   const rows: PrimerCreate[] = []
+  const seenNames = new Set<string>()
 
   for (let i = 1; i < lines.length; i++) {
     const cells = lines[i].split(delimiter)
@@ -65,6 +66,13 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
       errors.push(`Row ${i + 1}: missing required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`)
       continue
     }
+
+    const name = obj['name'] as string
+    if (seenNames.has(name)) {
+      errors.push(`Row ${i + 1}: duplicate name "${name}" — each primer must have a unique name`)
+      continue
+    }
+    seenNames.add(name)
 
     rows.push(obj as unknown as PrimerCreate)
   }

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 
 from app.crud.primer import get_primers, get_primer, create_primer, update_primer, delete_primer, bulk_create_primers
@@ -16,14 +17,24 @@ def list_primers(q: Optional[str] = None, db: Session = Depends(get_db), _=Depen
 
 @router.post("/", response_model=PrimerRead)
 def create(data: PrimerCreate, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    return create_primer(db, data)
+    try:
+        return create_primer(db, data)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"A primer named '{data.name}' already exists")
 
 
 @router.post("/bulk", response_model=List[PrimerRead])
 def bulk_create(data: List[PrimerCreate], db: Session = Depends(get_db), _=Depends(get_current_user)):
     if not data:
         raise HTTPException(status_code=400, detail="No primers provided")
-    return bulk_create_primers(db, data)
+    try:
+        return bulk_create_primers(db, data)
+    except IntegrityError as e:
+        db.rollback()
+        # Extract the duplicate name from the error if possible
+        msg = str(e.orig) if e.orig else str(e)
+        raise HTTPException(status_code=400, detail=f"Duplicate primer name in import — check for names that already exist in the library. Detail: {msg}")
 
 
 @router.get("/{primer_id}", response_model=PrimerRead)
