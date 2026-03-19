@@ -9,17 +9,24 @@ import {
   RetweetOutlined,
   DownloadOutlined,
   LinkOutlined,
+  FolderOutlined,
+  LockOutlined,
 } from '@ant-design/icons'
 
 const { Title, Paragraph, Text } = Typography
 
 const permissionsData = [
-  { action: 'View all runs and samples', user: '✓', admin: '✓' },
+  { action: 'View runs and samples (unprotected projects)', user: '✓', admin: '✓' },
+  { action: 'View runs in protected projects (if a member)', user: '✓', admin: '✓' },
+  { action: 'View runs in protected projects (any)', user: '', admin: '✓' },
   { action: 'Create and edit runs', user: '✓', admin: '✓' },
   { action: 'Add and edit samples within runs', user: '✓', admin: '✓' },
   { action: 'Upload attachments', user: '✓', admin: '✓' },
   { action: 'Delete samples from runs', user: '✓', admin: '✓' },
   { action: 'Delete runs', user: '', admin: '✓' },
+  { action: 'Create and manage projects', user: '', admin: '✓' },
+  { action: 'Add / remove project members', user: '', admin: '✓' },
+  { action: 'Toggle project protection', user: '', admin: '✓' },
   { action: 'Manage users', user: '', admin: '✓' },
   { action: 'Manage protocols and primers', user: '✓', admin: '✓' },
   { action: 'Configure Tessera integration', user: '', admin: '✓' },
@@ -43,7 +50,9 @@ export default function HelpPage() {
       {/* ── Workflow overview ─────────────────────────────────────────── */}
       <Card style={{ marginBottom: 24, background: '#f0f5ff', border: '1px solid #bfdbfe' }}>
         <Title level={5} style={{ marginTop: 0 }}>Typical workflow</Title>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+          <Tag color="blue">Project</Tag>
+          <span style={{ color: '#888' }}>→</span>
           {[
             { label: 'Extraction', color: '#1677ff' },
             { label: '→', color: '#888' },
@@ -62,9 +71,40 @@ export default function HelpPage() {
             <span key={i} style={{ color: s.color, fontWeight: s.label === '→' ? 400 : 600, fontSize: 14, marginLeft: 8 }}>{s.label}</span>
           ))}
         </div>
-        <Paragraph style={{ marginTop: 8, marginBottom: 0 }} type="secondary">
-          Each step is a <Text strong>Run</Text> (the batch event) containing <Text strong>Samples</Text> (per-specimen results). Runs are independent — you don't have to follow the full pipeline.
+        <Paragraph style={{ marginBottom: 0 }} type="secondary">
+          Every run must be assigned to a <Text strong>Project</Text> and an <Text strong>Operator</Text> before it can be saved. Each step is a <Text strong>Run</Text> (the batch event) containing <Text strong>Samples</Text> (per-specimen results). Runs are independent — you don't have to follow the full pipeline.
         </Paragraph>
+      </Card>
+
+      {/* ── 0. Projects ──────────────────────────────────────────────── */}
+      <Card style={{ marginBottom: 24 }}>
+        <Title level={4} style={{ marginTop: 0 }}>
+          <FolderOutlined style={{ marginRight: 8, color: '#f59e0b' }} />
+          0 — Set up a project (admin)
+        </Title>
+        <Paragraph>
+          Every run must belong to a project. Projects let you group and filter all workflow runs across the app, and optionally restrict access to members only.
+        </Paragraph>
+        <Steps
+          direction="vertical"
+          size="small"
+          items={[
+            { title: 'Go to Projects', description: 'Click Projects in the sidebar (under Manage).' },
+            { title: 'Create a project', description: 'Enter a short code (e.g. AMPH2024, 1–20 uppercase alphanumeric) and a name. The code is used as a label on all list pages.' },
+            {
+              title: 'Add members',
+              description: 'Click Members next to the project and add users. Members are used for access control on protected projects.',
+            },
+            {
+              title: 'Optionally protect the project',
+              description: (
+                <span>
+                  Enable the <Text strong>Protected</Text> toggle (lock icon) to restrict all runs in this project to members only. Admins always have access. Non-members cannot view, edit, or export any run assigned to a protected project.
+                </span>
+              ),
+            },
+          ]}
+        />
       </Card>
 
       {/* ── 1. Extractions ───────────────────────────────────────────── */}
@@ -80,8 +120,8 @@ export default function HelpPage() {
           direction="vertical"
           size="small"
           items={[
-            { title: 'Go to Extractions', description: 'Click Extractions in the sidebar, then + New Run.' },
-            { title: 'Fill in run details', description: 'Set the date, operator, extraction kit, protocol, and container type (plate or strip tubes).' },
+            { title: 'Go to Extractions', description: 'Click Extractions in the sidebar (under Workflows), then + New Run.' },
+            { title: 'Fill in run details', description: 'Project and operator are required. Also set the date, extraction kit, protocol, and container type (plate or strip tubes).' },
             { title: 'Add samples', description: 'Paste specimen codes from Tessera into the bulk paste box, or add them one at a time. Each sample records elution volume, yield (ng/µL), and QC status.' },
             { title: 'Save', description: 'The run is now listed and linked back to Tessera automatically.' },
           ]}
@@ -102,7 +142,7 @@ export default function HelpPage() {
           size="small"
           items={[
             { title: 'Go to PCR', description: 'Click PCR in the sidebar, then + New Run.' },
-            { title: 'Set run parameters', description: 'Date, operator, primers used, annealing temperature, cycle count, and protocol.' },
+            { title: 'Set run parameters', description: 'Project and operator are required. Also set date, primers, annealing temperature, cycle count, and protocol.' },
             { title: 'Add samples', description: 'Select the source extraction for each sample. Record band size (bp) and QC status (Pass / Fail / Weak).' },
           ]}
         />
@@ -122,7 +162,7 @@ export default function HelpPage() {
           size="small"
           items={[
             { title: 'Go to Sanger', description: 'Click Sanger in the sidebar, then + New Run.' },
-            { title: 'Set run details', description: 'Sequencing facility, submission date, primer used, and protocol.' },
+            { title: 'Set run details', description: 'Project and operator are required. Also set sequencing facility, submission date, primer, and direction.' },
             { title: 'Add samples', description: 'Select the source PCR sample. Once results are back, paste or upload the sequence and set QC status.' },
           ]}
         />
@@ -142,7 +182,7 @@ export default function HelpPage() {
           size="small"
           items={[
             { title: 'Go to Library Prep', description: 'Click Library Prep in the sidebar, then + New Run.' },
-            { title: 'Set run details', description: 'Date, operator, library kit, target insert size, and protocol.' },
+            { title: 'Set run details', description: 'Project and operator are required. Also set date, library kit, target region, and protocol.' },
             { title: 'Add preps', description: 'Select source extractions. Record index/barcode, concentration (nM), and QC status.' },
           ]}
         />
@@ -155,14 +195,14 @@ export default function HelpPage() {
           5 — NGS runs
         </Title>
         <Paragraph>
-          Record sequencing runs (Illumina, Nanopore, etc.) and pool the libraries submitted.
+          Record sequencing runs (Illumina, Nanopore, PacBio, etc.) and pool the libraries submitted.
         </Paragraph>
         <Steps
           direction="vertical"
           size="small"
           items={[
             { title: 'Go to NGS Runs', description: 'Click NGS Runs in the sidebar, then + New Run.' },
-            { title: 'Set run details', description: 'Platform, run date, flow cell ID, and sequencing facility.' },
+            { title: 'Set run details', description: 'Project, operator, and platform are required. Also set run date, flow cell ID, and instrument.' },
             { title: 'Add libraries', description: 'Select prepared libraries from previous library prep runs. Record reads (millions) and QC status once data is returned.' },
           ]}
         />
@@ -173,11 +213,31 @@ export default function HelpPage() {
 
       <Card style={{ marginBottom: 16 }}>
         <Title level={5} style={{ marginTop: 0 }}>
+          <FolderOutlined style={{ marginRight: 8 }} />
+          Filtering by project and operator
+        </Title>
+        <Paragraph style={{ marginBottom: 0 }}>
+          Every workflow list page (Extractions, PCR, Sanger, Library Prep, NGS Runs) has <Text strong>Filter by project</Text> and <Text strong>Filter by operator</Text> dropdowns at the top. Use these to quickly narrow down runs to a specific project or team member. Filters can be combined.
+        </Paragraph>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={5} style={{ marginTop: 0 }}>
+          <LockOutlined style={{ marginRight: 8 }} />
+          Protected projects
+        </Title>
+        <Paragraph style={{ marginBottom: 0 }}>
+          Admins can mark any project as <Text strong>Protected</Text> from the Projects page (toggle the lock switch in the Create or Edit modal). When protected, only project members and admins can view, edit, or export runs assigned to that project. Non-members will not see those runs in any list or be able to access them directly. A lock icon next to the project code in the Projects table indicates it is protected.
+        </Paragraph>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={5} style={{ marginTop: 0 }}>
           <FileTextOutlined style={{ marginRight: 8 }} />
           Protocols
         </Title>
         <Paragraph style={{ marginBottom: 0 }}>
-          Store lab protocols as structured documents (written in Typst markup). Go to <Text strong>Protocols</Text> in the sidebar to create, edit, and download protocols as PDFs. Protocols can be attached to runs so the exact method used is recorded alongside the data.
+          Store lab protocols as structured documents. Go to <Text strong>Protocols</Text> in the sidebar (under Reference) to create, edit, and download protocols as PDFs. Protocols can be attached to runs so the exact method used is recorded alongside the data. Protocols support a <Text strong>Thermocycling</Text> step type with structured fields for cycle count, denaturation, annealing, extension temperatures and times — these render as a formatted table in the PDF. Protocols can also be exported as importable text files (<Text code>.txt</Text>) for sharing or backup.
         </Paragraph>
       </Card>
 
@@ -187,7 +247,7 @@ export default function HelpPage() {
           Primer library
         </Title>
         <Paragraph style={{ marginBottom: 0 }}>
-          Store and search your lab's primer sequences. Go to <Text strong>Primers</Text> in the sidebar. Each primer records the sequence (5′→3′), direction, target gene/region, target taxa, annealing temperature, and product size. Sequences can be copied to clipboard directly from the table.
+          Store and search your lab's primer sequences under <Text strong>Primers</Text> in the sidebar (under Reference). Each primer records the sequence (5′→3′), direction, target gene/region, target taxa, annealing temperature, and product size. Sequences can be copied to clipboard directly from the table. Use <Text strong>Bulk Add</Text> to paste a TSV/CSV table of primers at once.
         </Paragraph>
       </Card>
 
@@ -207,7 +267,7 @@ export default function HelpPage() {
           Export
         </Title>
         <Paragraph style={{ marginBottom: 0 }}>
-          Go to <Text strong>Export</Text> in the sidebar to download run data as CSV — extractions, PCR, Sanger, library preps, or NGS libraries. Admins can also download a full database backup or restore from a previous backup.
+          Go to <Text strong>Export</Text> in the sidebar (under Manage) to download run data as CSV — extractions, PCR, Sanger, library preps, or NGS libraries. Individual runs also have a per-run CSV export button on their detail page. Admins can download a full database backup or restore from a previous backup.
         </Paragraph>
       </Card>
 
@@ -231,7 +291,9 @@ export default function HelpPage() {
       <Divider />
       <Title level={4}>Tips</Title>
       <ul>
-        <li>Click any run ID in a list to open its detail page.</li>
+        <li>A project must exist before you can create any run — ask an admin to set one up if none appear in the dropdown.</li>
+        <li>Click any run in a list to open its detail page.</li>
+        <li>Use the project and operator filters on any workflow list page to narrow down results.</li>
         <li>Use the bulk paste box on extraction runs to add many specimen codes at once — one per line.</li>
         <li>Samples within a run show their QC status as a colour-coded tag: <Tag color="green">Pass</Tag> <Tag color="orange">Weak</Tag> <Tag color="red">Fail</Tag>.</li>
         <li>Protocols attached to runs are version-snapshotted — editing a protocol later won't change what was recorded on past runs.</li>
