@@ -163,9 +163,9 @@ export interface ExtractionRun {
 
 export interface ExtractionRunCreate {
   run_date?: string
-  operator_id?: number
+  operator_id: number
+  project_id: number
   protocol_id?: number
-  project_id?: number
   kit?: string
   extraction_type?: ExtractionType
   container_type?: string
@@ -228,9 +228,9 @@ export interface PCRRun {
 
 export interface PCRRunCreate {
   run_date?: string
-  operator_id?: number
+  operator_id: number
+  project_id: number
   protocol_id?: number
-  project_id?: number
   target_region?: string
   primer_f?: string
   primer_r?: string
@@ -295,9 +295,9 @@ export interface SangerRun {
 
 export interface SangerRunCreate {
   run_date?: string
-  operator_id?: number
+  operator_id: number
+  project_id: number
   protocol_id?: number
-  project_id?: number
   primer?: string
   direction?: SangerDirection
   service_provider?: string
@@ -366,9 +366,9 @@ export interface LibraryPrepRun {
 
 export interface LibraryPrepRunCreate {
   run_date?: string
-  operator_id?: number
+  operator_id: number
+  project_id: number
   protocol_id?: number
-  project_id?: number
   kit?: string
   target_region?: string
   primer_f?: string
@@ -414,12 +414,12 @@ export interface NGSRun {
 
 export interface NGSRunCreate {
   platform: NGSPlatform
+  operator_id: number
+  project_id: number
   instrument?: string
   run_id?: string
   date?: string
-  operator_id?: number
   protocol_id?: number
-  project_id?: number
   flow_cell_id?: string
   reagent_kit?: string
   output_path?: string

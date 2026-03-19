@@ -60,9 +60,9 @@ class ExtractionRead(BaseModel):
 
 class ExtractionRunCreate(BaseModel):
     run_date: Optional[date] = None
-    operator_id: Optional[int] = None
+    operator_id: int
+    project_id: int
     protocol_id: Optional[int] = None
-    project_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None

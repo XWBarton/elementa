@@ -33,12 +33,12 @@ class NGSRunLibraryRead(BaseModel):
 
 class NGSRunCreate(BaseModel):
     platform: str
+    operator_id: int
+    project_id: int
     instrument: Optional[str] = None
     run_id: Optional[str] = None
     date: Optional[date] = None
-    operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
-    project_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None

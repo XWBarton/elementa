@@ -93,13 +93,13 @@ export default function NGSRunFormPage() {
           </Row>
           <Row gutter={16}>
             <Col span={6}>
-              <Form.Item name="operator_id" label="Operator">
-                <Select options={userOptions} allowClear />
+              <Form.Item name="operator_id" label="Operator" rules={[{ required: true, message: 'Operator is required' }]}>
+                <Select options={userOptions} />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="project_id" label="Project">
-                <Select allowClear showSearch optionFilterProp="label" placeholder="Optional"
+              <Form.Item name="project_id" label="Project" rules={[{ required: true, message: 'Project is required' }]}>
+                <Select showSearch optionFilterProp="label" placeholder="Select project"
                   options={projects?.map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []} />
               </Form.Item>
             </Col>

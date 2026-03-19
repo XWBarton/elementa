@@ -53,9 +53,9 @@ class SangerSampleRead(BaseModel):
 
 class SangerRunCreate(BaseModel):
     run_date: Optional[date] = None
-    operator_id: Optional[int] = None
+    operator_id: int
+    project_id: int
     protocol_id: Optional[int] = None
-    project_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None

@@ -92,13 +92,13 @@ export default function ExtractionRunFormPage() {
           <Form.Item label="Run Date" name="run_date">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="Operator" name="operator_id">
-            <Select allowClear placeholder="Select operator" options={
+          <Form.Item label="Operator" name="operator_id" rules={[{ required: true, message: 'Operator is required' }]}>
+            <Select placeholder="Select operator" options={
               usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []
             } />
           </Form.Item>
-          <Form.Item label="Project" name="project_id">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Assign to project (optional)"
+          <Form.Item label="Project" name="project_id" rules={[{ required: true, message: 'Project is required' }]}>
+            <Select showSearch optionFilterProp="label" placeholder="Select project"
               options={projects?.map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []} />
           </Form.Item>
           <Form.Item label="Protocol (SOP)" name="protocol_id">

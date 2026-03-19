@@ -44,9 +44,9 @@ class PCRSampleRead(BaseModel):
 
 class PCRRunCreate(BaseModel):
     run_date: Optional[date] = None
-    operator_id: Optional[int] = None
+    operator_id: int
+    project_id: int
     protocol_id: Optional[int] = None
-    project_id: Optional[int] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
