@@ -41,7 +41,7 @@ def _esc(s: Optional[str]) -> str:
     if not s:
         return ""
     s = s.replace("\\", "\\u{005C}")
-    for ch in ["#", "*", "_", "$", "`", "@"]:
+    for ch in ["#", "*", "_", "$", "`", "@", "<", ">"]:
         s = s.replace(ch, "\\" + ch)
     # single newline → Typst forced line break; double newline stays as paragraph break
     s = s.replace("\n\n", "\x00PARA\x00")
