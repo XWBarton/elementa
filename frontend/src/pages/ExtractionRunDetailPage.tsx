@@ -12,11 +12,12 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
   message,
   notification,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, LinkOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import {
@@ -81,10 +82,10 @@ export default function ExtractionRunDetailPage() {
     if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
       const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'extraction' })
       notification.info({
-        message: 'Record usage in Tessera',
-        description: `Log what was taken from ${code}`,
-        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
-        duration: 12,
+        message: `Log usage of ${code} in Tessera`,
+        description: 'Record how much tissue was taken from this specimen for this extraction.',
+        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera ↗</Button>,
+        duration: 15,
       })
     }
   }
@@ -165,7 +166,19 @@ export default function ExtractionRunDetailPage() {
       render: (v: string) => v ? <Tag color="purple">{v}</Tag> : '—',
     }] : []),
     { title: 'Type', dataIndex: 'sample_type', key: 'sample_type', width: 140, render: (v: string) => <SampleTypeTag type={v} /> },
-    { title: 'Sample Code', dataIndex: 'specimen_code', key: 'specimen_code', render: (v: string) => <Tag color="blue">{v}</Tag> },
+    {
+      title: 'Sample Code', dataIndex: 'specimen_code', key: 'specimen_code',
+      render: (v: string) => {
+        if (tesseraUrl && v && !['NTC', 'EXB'].includes(v)) {
+          return (
+            <a href={`${tesseraUrl}/specimens/find?code=${v}`} target="_blank" rel="noopener noreferrer">
+              <Tag color="blue">{v}</Tag>
+            </a>
+          )
+        }
+        return <Tag color="blue">{v}</Tag>
+      },
+    },
     { title: 'Yield (ng/µl)', dataIndex: 'yield_ng_ul', key: 'yield_ng_ul', render: (v: number) => v ?? '—' },
     { title: 'A260/280', dataIndex: 'a260_280', key: 'a260_280', render: (v: number) => v ?? '—' },
     { title: 'A260/230', dataIndex: 'a260_230', key: 'a260_230', render: (v: number) => v ?? '—' },
@@ -177,6 +190,18 @@ export default function ExtractionRunDetailPage() {
       key: 'actions',
       render: (_: unknown, record: Extraction) => (
         <Space>
+          {tesseraUrl && record.specimen_code && !['NTC', 'EXB'].includes(record.specimen_code) && (
+            <Tooltip title="Log specimen usage in Tessera">
+              <Button
+                type="link"
+                icon={<LinkOutlined />}
+                onClick={() => {
+                  const params = new URLSearchParams({ code: record.specimen_code, elementa_ref: String(runId), run_type: 'extraction' })
+                  window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')
+                }}
+              />
+            </Tooltip>
+          )}
           <Button
             type="link"
             icon={<EditOutlined />}

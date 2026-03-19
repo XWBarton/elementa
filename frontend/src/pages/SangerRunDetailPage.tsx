@@ -1,5 +1,5 @@
 import {
-  Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, Upload, message, notification,
+  Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, Upload, message,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -9,7 +9,6 @@ import { useAllPCRSamples } from '../hooks/usePCRRuns'
 import { PCRSample, SangerSample, SangerSampleCreate, SangerSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
 import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
-import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
 import { useTesseraUrl } from '../hooks/useTesseraUrl'
 import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
 import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
@@ -133,8 +132,13 @@ export default function SangerRunDetailPage() {
   allPCRSamples?.forEach(s => { pcrSampleMap[s.id] = s })
 
   const pcrOptions = allPCRSamples?.map(s => {
-    const code = s.specimen_code ?? s.extraction?.specimen_code
-    return { label: code ? `${code} (PCR #${s.id})` : `PCR Sample #${s.id}`, value: s.id }
+    const code = s.specimen_code
+    const runLabel = s.run_date ? s.run_date : `Run #${s.run_id}`
+    const regionLabel = s.target_region ? ` · ${s.target_region}` : ''
+    return {
+      label: code ? `${code} — PCR Run #${s.run_id} (${runLabel}${regionLabel})` : `PCR Sample #${s.id}`,
+      value: s.id,
+    }
   }) ?? []
 
   const onPCRSampleChange = (form: ReturnType<typeof Form.useForm>[0]) => (pcrSampleId: number | undefined) => {
@@ -195,16 +199,6 @@ export default function SangerRunDetailPage() {
     message.success('Sample added')
     addForm.resetFields()
     setAddModalOpen(false)
-    const code = values.specimen_code
-    if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
-      const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'sanger' })
-      notification.info({
-        message: 'Record usage in Tessera',
-        description: `Log what was taken from ${code}`,
-        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
-        duration: 12,
-      })
-    }
   }
 
   const handleEditSave = async (values: SangerSampleUpdate) => {
@@ -229,12 +223,28 @@ export default function SangerRunDetailPage() {
       title: 'Sample Code', key: 'specimen',
       render: (_: unknown, r: SangerSample) => {
         const code = r.specimen_code ?? r.pcr_sample?.specimen_code ?? r.pcr_sample?.extraction?.specimen_code
-        return code ? <Tag color="blue">{code}</Tag> : '—'
+        if (!code) return '—'
+        if (tesseraUrl && !['NTC', 'EXB'].includes(code)) {
+          return (
+            <a href={`${tesseraUrl}/specimens/find?code=${code}`} target="_blank" rel="noopener noreferrer">
+              <Tag color="blue">{code}</Tag>
+            </a>
+          )
+        }
+        return <Tag color="blue">{code}</Tag>
       },
     },
     {
-      title: 'PCR Sample', key: 'pcr_sample',
-      render: (_: unknown, r: SangerSample) => r.pcr_sample_id ? <Tag>PCR #{r.pcr_sample_id}</Tag> : '—',
+      title: 'From PCR', key: 'pcr_sample',
+      render: (_: unknown, r: SangerSample) => {
+        if (!r.pcr_sample_id) return '—'
+        return (
+          <Button type="link" size="small" style={{ padding: 0 }}
+            onClick={() => navigate(`/pcr-runs/${r.pcr_sample!.run_id}`)}>
+            PCR Run #{r.pcr_sample!.run_id}
+          </Button>
+        )
+      },
     },
     {
       title: 'Sequence', key: 'sequence',
@@ -294,8 +304,8 @@ export default function SangerRunDetailPage() {
       <Form.Item label="PCR Sample (optional)" name="pcr_sample_id">
         <Select allowClear showSearch optionFilterProp="label" placeholder="Search by specimen code…" options={pcrOptions} onChange={onPCRSampleChange(form)} />
       </Form.Item>
-      <Form.Item label="Sample Code" name="specimen_code">
-        <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-042 or PCTRL-01" />
+      <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled from PCR sample above">
+        <Input placeholder="e.g. AMPH2024-042 or PCTRL-01" />
       </Form.Item>
       <Form.Item label="Sequence">
         <Upload.Dragger

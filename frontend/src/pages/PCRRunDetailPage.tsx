@@ -1,5 +1,5 @@
 import {
-  Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, notification,
+  Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -9,7 +9,6 @@ import { useAllExtractions } from '../hooks/useExtractionRuns'
 import { Extraction, PCRSample, PCRSampleCreate, PCRSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
 import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
-import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
 import { useTesseraUrl } from '../hooks/useTesseraUrl'
 import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
 import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
@@ -45,10 +44,11 @@ export default function PCRRunDetailPage() {
   const extractionMap: Record<number, Extraction> = {}
   allExtractions?.forEach(e => { extractionMap[e.id] = e })
 
-  const extractionOptions = allExtractions?.map(e => ({
-    label: `${e.specimen_code} (ID ${e.id})`,
-    value: e.id,
-  })) ?? []
+  const extractionOptions = allExtractions?.map(e => {
+    const runLabel = e.run_date ? e.run_date : `Run #${e.run_id}`
+    const typeLabel = e.extraction_type ? ` · ${e.extraction_type}` : ''
+    return { label: `${e.specimen_code} — Ext. Run #${e.run_id} (${runLabel}${typeLabel})`, value: e.id }
+  }) ?? []
 
   const gelColor: Record<string, string> = { pass: 'green', fail: 'red', weak: 'orange', multiple_bands: 'purple' }
 
@@ -57,16 +57,6 @@ export default function PCRRunDetailPage() {
     message.success('Sample added')
     addForm.resetFields()
     setAddModalOpen(false)
-    const code = values.specimen_code
-    if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
-      const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'pcr' })
-      notification.info({
-        message: 'Record usage in Tessera',
-        description: `Log what was taken from ${code}`,
-        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
-        duration: 12,
-      })
-    }
   }
 
   const handleEditSave = async (values: PCRSampleUpdate) => {
@@ -109,14 +99,29 @@ export default function PCRRunDetailPage() {
       key: 'specimen',
       render: (_: unknown, r: PCRSample) => {
         const code = r.specimen_code ?? r.extraction?.specimen_code
-        return code ? <Tag color="blue">{code}</Tag> : <Tag>—</Tag>
+        if (!code) return <Tag>—</Tag>
+        if (tesseraUrl && !['NTC', 'EXB'].includes(code)) {
+          return (
+            <a href={`${tesseraUrl}/specimens/find?code=${code}`} target="_blank" rel="noopener noreferrer">
+              <Tag color="blue">{code}</Tag>
+            </a>
+          )
+        }
+        return <Tag color="blue">{code}</Tag>
       },
     },
     {
-      title: 'Extraction',
-      dataIndex: 'extraction_id',
-      key: 'extraction_id',
-      render: (v: number) => v ? `ID ${v}` : '—',
+      title: 'From Extraction',
+      key: 'extraction',
+      render: (_: unknown, r: PCRSample) => {
+        if (!r.extraction) return '—'
+        return (
+          <Button type="link" size="small" style={{ padding: 0 }}
+            onClick={() => navigate(`/extraction-runs/${r.extraction!.run_id}`)}>
+            Ext. Run #{r.extraction.run_id}
+          </Button>
+        )
+      },
     },
     {
       title: 'Gel Result',
@@ -214,7 +219,7 @@ export default function PCRRunDetailPage() {
           <Form.Item label="Sample Type" name="sample_type">
             <SampleTypeSelect />
           </Form.Item>
-          <Form.Item label="Extraction (optional — link to DB record)" name="extraction_id">
+          <Form.Item label="Extraction (link to DB record)" name="extraction_id">
             <Select
               allowClear
               showSearch
@@ -224,8 +229,8 @@ export default function PCRRunDetailPage() {
               onChange={onExtractionChange(addForm)}
             />
           </Form.Item>
-          <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled when extraction is selected; edit freely for pre-database specimens">
-            <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-042" />
+          <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled from extraction above; edit freely for pre-database specimens">
+            <Input placeholder="e.g. AMPH2024-042" />
           </Form.Item>
           <Form.Item label="Gel Result" name="gel_result">
             <Select allowClear options={GEL_OPTIONS} />
@@ -247,7 +252,7 @@ export default function PCRRunDetailPage() {
           <Form.Item label="Sample Type" name="sample_type">
             <SampleTypeSelect />
           </Form.Item>
-          <Form.Item label="Extraction (optional)" name="extraction_id">
+          <Form.Item label="Extraction" name="extraction_id">
             <Select
               allowClear
               showSearch
@@ -257,7 +262,7 @@ export default function PCRRunDetailPage() {
             />
           </Form.Item>
           <Form.Item label="Sample Code" name="specimen_code">
-            <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-042" />
+            <Input placeholder="e.g. AMPH2024-042" />
           </Form.Item>
           <Form.Item label="Gel Result" name="gel_result">
             <Select allowClear options={GEL_OPTIONS} />

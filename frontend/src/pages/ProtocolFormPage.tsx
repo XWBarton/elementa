@@ -30,6 +30,71 @@ const CATEGORY_OPTIONS = [
   { label: 'General', value: 'general' },
 ]
 
+const STEP_TYPE_OPTIONS = [
+  { label: 'Standard', value: 'standard' },
+  { label: 'Thermocycling', value: 'thermocycling' },
+]
+
+function ThermocyclingFields({ fieldName }: { fieldName: number }) {
+  return (
+    <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '10px 12px', marginBottom: 8 }}>
+      <Typography.Text strong style={{ fontSize: 12, color: '#d46b08', display: 'block', marginBottom: 8 }}>
+        Thermocycling Parameters
+      </Typography.Text>
+      <Space wrap>
+        <Form.Item label="Cycles" name={[fieldName, 'cycles']} style={{ marginBottom: 8 }}>
+          <InputNumber min={1} style={{ width: 90 }} />
+        </Form.Item>
+      </Space>
+      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Initial Denaturation</Typography.Text>
+      <Space wrap>
+        <Form.Item label="Temp (°C)" name={[fieldName, 'initial_denat_temp_c']} style={{ marginBottom: 8 }}>
+          <InputNumber style={{ width: 110 }} />
+        </Form.Item>
+        <Form.Item label="Time (s)" name={[fieldName, 'initial_denat_time_s']} style={{ marginBottom: 8 }}>
+          <InputNumber min={0} style={{ width: 110 }} />
+        </Form.Item>
+      </Space>
+      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Denaturation (per cycle)</Typography.Text>
+      <Space wrap>
+        <Form.Item label="Temp (°C)" name={[fieldName, 'denat_temp_c']} style={{ marginBottom: 8 }}>
+          <InputNumber style={{ width: 110 }} />
+        </Form.Item>
+        <Form.Item label="Time (s)" name={[fieldName, 'denat_time_s']} style={{ marginBottom: 8 }}>
+          <InputNumber min={0} style={{ width: 110 }} />
+        </Form.Item>
+      </Space>
+      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Annealing (per cycle)</Typography.Text>
+      <Space wrap>
+        <Form.Item label="Temp (°C)" name={[fieldName, 'anneal_temp_c']} style={{ marginBottom: 8 }}>
+          <InputNumber style={{ width: 110 }} />
+        </Form.Item>
+        <Form.Item label="Time (s)" name={[fieldName, 'anneal_time_s']} style={{ marginBottom: 8 }}>
+          <InputNumber min={0} style={{ width: 110 }} />
+        </Form.Item>
+      </Space>
+      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Extension (per cycle)</Typography.Text>
+      <Space wrap>
+        <Form.Item label="Temp (°C)" name={[fieldName, 'extend_temp_c']} style={{ marginBottom: 8 }}>
+          <InputNumber style={{ width: 110 }} />
+        </Form.Item>
+        <Form.Item label="Time (s)" name={[fieldName, 'extend_time_s']} style={{ marginBottom: 8 }}>
+          <InputNumber min={0} style={{ width: 110 }} />
+        </Form.Item>
+      </Space>
+      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Final Extension</Typography.Text>
+      <Space wrap>
+        <Form.Item label="Temp (°C)" name={[fieldName, 'final_extend_temp_c']} style={{ marginBottom: 8 }}>
+          <InputNumber style={{ width: 110 }} />
+        </Form.Item>
+        <Form.Item label="Time (s)" name={[fieldName, 'final_extend_time_s']} style={{ marginBottom: 8 }}>
+          <InputNumber min={0} style={{ width: 110 }} />
+        </Form.Item>
+      </Space>
+    </div>
+  )
+}
+
 export default function ProtocolFormPage() {
   const { id } = useParams()
   const isEdit = !!id
@@ -153,6 +218,13 @@ export default function ProtocolFormPage() {
                     }
                   >
                     <Form.Item
+                      label="Step Type"
+                      name={[field.name, 'step_type']}
+                      style={{ marginBottom: 8 }}
+                    >
+                      <Select options={STEP_TYPE_OPTIONS} placeholder="Standard" allowClear style={{ width: 180 }} />
+                    </Form.Item>
+                    <Form.Item
                       label="Title"
                       name={[field.name, 'title']}
                       rules={[{ required: true, message: 'Title required' }]}
@@ -167,17 +239,27 @@ export default function ProtocolFormPage() {
                     >
                       <Input.TextArea rows={2} placeholder="Step details..." />
                     </Form.Item>
-                    <Space wrap>
-                      <Form.Item label="Duration (min)" name={[field.name, 'duration_min']} style={{ marginBottom: 8 }}>
-                        <InputNumber min={0} style={{ width: 120 }} />
-                      </Form.Item>
-                      <Form.Item label="Temp (°C)" name={[field.name, 'temp_c']} style={{ marginBottom: 8 }}>
-                        <InputNumber style={{ width: 120 }} />
-                      </Form.Item>
-                      <Form.Item label="RPM" name={[field.name, 'rpm']} style={{ marginBottom: 8 }}>
-                        <InputNumber min={0} style={{ width: 120 }} />
-                      </Form.Item>
-                    </Space>
+                    <Form.Item noStyle shouldUpdate>
+                      {({ getFieldValue }) => {
+                        const stepType = getFieldValue(['steps', index, 'step_type'])
+                        if (stepType === 'thermocycling') {
+                          return <ThermocyclingFields fieldName={field.name} />
+                        }
+                        return (
+                          <Space wrap>
+                            <Form.Item label="Duration (min)" name={[field.name, 'duration_min']} style={{ marginBottom: 8 }}>
+                              <InputNumber min={0} style={{ width: 120 }} />
+                            </Form.Item>
+                            <Form.Item label="Temp (°C)" name={[field.name, 'temp_c']} style={{ marginBottom: 8 }}>
+                              <InputNumber style={{ width: 120 }} />
+                            </Form.Item>
+                            <Form.Item label="RPM" name={[field.name, 'rpm']} style={{ marginBottom: 8 }}>
+                              <InputNumber min={0} style={{ width: 120 }} />
+                            </Form.Item>
+                          </Space>
+                        )
+                      }}
+                    </Form.Item>
                   </Card>
                 ))}
                 <Button

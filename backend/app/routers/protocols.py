@@ -104,24 +104,65 @@ def _build_typst(protocol: ProtocolRead) -> str:
     for i, step in enumerate(steps):
         title = _esc(str(step.get("title", "")))
         description = _esc(str(step.get("description", ""))) if step.get("description") else ""
-        duration = step.get("duration_min")
-        temp = step.get("temp_c")
-        rpm = step.get("rpm")
+        step_type = step.get("step_type", "standard")
 
-        badge_parts = []
-        if duration is not None:
-            badge_parts.append(_badge(f"{duration} min", "e8f4f8", "0050b3"))
-        if temp is not None:
-            badge_parts.append(_badge(f"{temp}\u00b0C", "fff2e8", "ad2102"))
-        if rpm is not None:
-            badge_parts.append(_badge(f"{rpm} RPM", "f9f0ff", "531dab"))
+        if step_type == "thermocycling":
+            cycles = step.get("cycles")
+            thermo_badge = _badge(f"Thermocycling{f' · {cycles}×' if cycles else ''}", "fff7e6", "d46b08")
+            badges = f"[{thermo_badge}]"
 
-        badges = "[" + " #h(5pt) ".join(badge_parts) + "]" if badge_parts else "[]"
+            def _tc_row(label: str, temp: Any, time: Any) -> str:
+                parts = []
+                if temp is not None:
+                    parts.append(f"{temp}\u00b0C")
+                if time is not None:
+                    parts.append(f"{time} s")
+                return f"  [#text(fill: luma(100), size: 9pt)[{label}]], [{', '.join(parts) or '\u2014'}]," if parts else ""
 
-        desc_part = (
-            f"\n  #v(7pt)\n  #line(length: 100%, stroke: 0.5pt + luma(220))\n  #v(5pt)\n  {description}"
-            if description else ""
-        )
+            tc_rows = []
+            for label, tk, tv in [
+                ("Initial denat.", "initial_denat_temp_c", "initial_denat_time_s"),
+                ("Denaturation", "denat_temp_c", "denat_time_s"),
+                ("Annealing", "anneal_temp_c", "anneal_time_s"),
+                ("Extension", "extend_temp_c", "extend_time_s"),
+                ("Final extension", "final_extend_temp_c", "final_extend_time_s"),
+            ]:
+                row = _tc_row(label, step.get(tk), step.get(tv))
+                if row:
+                    tc_rows.append(row)
+
+            tc_table = ""
+            if tc_rows:
+                tc_table = (
+                    f"\n  #v(7pt)\n"
+                    f"  #grid(columns: (auto, 1fr), column-gutter: 12pt, row-gutter: 5pt,\n"
+                    + "\n".join(tc_rows) + "\n  )\n"
+                )
+
+            desc_part = (
+                f"\n  #v(7pt)\n  #line(length: 100%, stroke: 0.5pt + luma(220))\n  #v(5pt)\n  {description}"
+                if description else ""
+            )
+        else:
+            duration = step.get("duration_min")
+            temp = step.get("temp_c")
+            rpm = step.get("rpm")
+
+            badge_parts = []
+            if duration is not None:
+                badge_parts.append(_badge(f"{duration} min", "e8f4f8", "0050b3"))
+            if temp is not None:
+                badge_parts.append(_badge(f"{temp}\u00b0C", "fff2e8", "ad2102"))
+            if rpm is not None:
+                badge_parts.append(_badge(f"{rpm} RPM", "f9f0ff", "531dab"))
+
+            badges = "[" + " #h(5pt) ".join(badge_parts) + "]" if badge_parts else "[]"
+            tc_table = ""
+
+            desc_part = (
+                f"\n  #v(7pt)\n  #line(length: 100%, stroke: 0.5pt + luma(220))\n  #v(5pt)\n  {description}"
+                if description else ""
+            )
 
         steps_lines.append(
             f'#block(\n'
@@ -137,7 +178,7 @@ def _build_typst(protocol: ProtocolRead) -> str:
             f'    align: horizon,\n'
             f'    text(weight: "bold")[{i + 1}. {title}],\n'
             f'    {badges},\n'
-            f'  ){desc_part}\n'
+            f'  ){tc_table}{desc_part}\n'
             f']\n'
             f'#v(8pt)'
         )

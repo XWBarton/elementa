@@ -6,9 +6,23 @@ export interface ProtocolStep {
   order: number
   title: string
   description?: string
+  step_type?: 'standard' | 'thermocycling'
+  // Standard step fields
   duration_min?: number
   temp_c?: number
   rpm?: number
+  // Thermocycling step fields
+  cycles?: number
+  initial_denat_temp_c?: number
+  initial_denat_time_s?: number
+  denat_temp_c?: number
+  denat_time_s?: number
+  anneal_temp_c?: number
+  anneal_time_s?: number
+  extend_temp_c?: number
+  extend_time_s?: number
+  final_extend_temp_c?: number
+  final_extend_time_s?: number
 }
 
 export interface Protocol {
@@ -73,6 +87,9 @@ export interface Extraction {
   notes?: string
   qc_status?: string
   sample_type?: SampleType
+  // Populated by all-extractions dropdown endpoint
+  run_date?: string
+  extraction_type?: string
 }
 
 export interface ExtractionCreate {
@@ -136,6 +153,9 @@ export interface PCRSample {
   notes?: string
   qc_status?: string
   sample_type?: SampleType
+  // Populated by all-samples dropdown endpoint
+  run_date?: string
+  target_region?: string
 }
 
 export interface PCRSampleCreate {
@@ -253,6 +273,8 @@ export interface LibraryPrep {
   run_id: number
   extraction_id?: number
   extraction?: Extraction
+  pcr_sample_id?: number
+  pcr_sample?: PCRSample
   specimen_code?: string
   index_i7?: string
   index_i5?: string
@@ -267,6 +289,7 @@ export interface LibraryPrep {
 
 export interface LibraryPrepCreate {
   extraction_id?: number
+  pcr_sample_id?: number
   specimen_code?: string
   index_i7?: string
   index_i5?: string

@@ -4,6 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.library_prep_run import LibraryPrepRun, LibraryPrep
+from app.models.pcr_run import PCRSample
 from app.schemas.library_prep_run import LibraryPrepRunCreate, LibraryPrepRunUpdate, LibraryPrepCreate, LibraryPrepUpdate
 
 
@@ -12,6 +13,14 @@ def _run_query(db: Session):
         joinedload(LibraryPrepRun.operator),
         joinedload(LibraryPrepRun.protocol),
         joinedload(LibraryPrepRun.samples).joinedload(LibraryPrep.extraction),
+        joinedload(LibraryPrepRun.samples).joinedload(LibraryPrep.pcr_sample).joinedload(PCRSample.extraction),
+    )
+
+
+def _sample_query(db: Session):
+    return db.query(LibraryPrep).options(
+        joinedload(LibraryPrep.extraction),
+        joinedload(LibraryPrep.pcr_sample).joinedload(PCRSample.extraction),
     )
 
 
@@ -51,12 +60,7 @@ def add_sample(db: Session, run_id: int, data: LibraryPrepCreate) -> LibraryPrep
     db.add(sample)
     db.commit()
     db.refresh(sample)
-    return (
-        db.query(LibraryPrep)
-        .options(joinedload(LibraryPrep.extraction))
-        .filter(LibraryPrep.id == sample.id)
-        .first()
-    )
+    return _sample_query(db).filter(LibraryPrep.id == sample.id).first()
 
 
 def update_sample(db: Session, sample: LibraryPrep, data: LibraryPrepUpdate) -> LibraryPrep:
@@ -64,12 +68,7 @@ def update_sample(db: Session, sample: LibraryPrep, data: LibraryPrepUpdate) -> 
         setattr(sample, key, value)
     db.commit()
     db.refresh(sample)
-    return (
-        db.query(LibraryPrep)
-        .options(joinedload(LibraryPrep.extraction))
-        .filter(LibraryPrep.id == sample.id)
-        .first()
-    )
+    return _sample_query(db).filter(LibraryPrep.id == sample.id).first()
 
 
 def delete_sample(db: Session, sample: LibraryPrep) -> None:
@@ -78,13 +77,17 @@ def delete_sample(db: Session, sample: LibraryPrep) -> None:
 
 
 def get_sample(db: Session, sample_id: int) -> Optional[LibraryPrep]:
-    return db.query(LibraryPrep).filter(LibraryPrep.id == sample_id).first()
+    return _sample_query(db).filter(LibraryPrep.id == sample_id).first()
 
 
 def list_all_preps(db: Session) -> List[LibraryPrep]:
     """For NGS dropdown selectors."""
     return (
         db.query(LibraryPrep)
-        .options(joinedload(LibraryPrep.extraction), joinedload(LibraryPrep.run))
+        .options(
+            joinedload(LibraryPrep.extraction),
+            joinedload(LibraryPrep.pcr_sample).joinedload(PCRSample.extraction),
+            joinedload(LibraryPrep.run),
+        )
         .all()
     )

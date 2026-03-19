@@ -44,9 +44,23 @@ def create_run(data: ExtractionRunCreate, db: Session = Depends(get_db), _=Depen
     return _run_detail(obj)
 
 
-@router.get("/all-extractions", response_model=list[ExtractionRead])
+@router.get("/all-extractions")
 def all_extractions(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    return crud.list_all_extractions(db)
+    extractions = crud.list_all_extractions(db)
+    return [
+        {
+            "id": e.id,
+            "run_id": e.run_id,
+            "specimen_code": e.specimen_code,
+            "run_date": str(e.run.run_date) if e.run and e.run.run_date else None,
+            "extraction_type": e.run.extraction_type if e.run else None,
+            "yield_ng_ul": e.yield_ng_ul,
+            "qc_status": e.qc_status,
+            "sample_type": e.sample_type,
+            "storage_location": e.storage_location,
+        }
+        for e in extractions
+    ]
 
 
 @router.get("/{run_id}", response_model=ExtractionRunDetail)

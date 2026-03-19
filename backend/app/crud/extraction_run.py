@@ -86,4 +86,9 @@ def get_sample(db: Session, sample_id: int) -> Optional[Extraction]:
 
 def list_all_extractions(db: Session) -> List[Extraction]:
     """For PCR/LibPrep dropdown selectors."""
-    return db.query(Extraction).order_by(Extraction.specimen_code).all()
+    return (
+        db.query(Extraction)
+        .options(joinedload(Extraction.run))
+        .order_by(Extraction.specimen_code)
+        .all()
+    )

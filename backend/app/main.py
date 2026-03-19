@@ -43,6 +43,7 @@ def migrate_db():
         ("library_prep_runs", "protocol_id", "ALTER TABLE library_prep_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
         ("ngs_runs", "protocol_id", "ALTER TABLE ngs_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
         ("sanger_samples", "sequence", "ALTER TABLE sanger_samples ADD COLUMN sequence TEXT"),
+        ("library_preps", "pcr_sample_id", "ALTER TABLE library_preps ADD COLUMN pcr_sample_id INTEGER REFERENCES pcr_samples(id)"),
     ]
     with engine.connect() as conn:
         for table, column, sql in migrations:

@@ -1,5 +1,5 @@
 import {
-  Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, notification,
+  Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -12,10 +12,10 @@ import {
   useUpdateLibraryPrep,
 } from '../hooks/useLibraryPrepRuns'
 import { useAllExtractions } from '../hooks/useExtractionRuns'
-import { Extraction, LibraryPrep, LibraryPrepCreate, LibraryPrepUpdate } from '../types'
+import { useAllPCRSamples } from '../hooks/usePCRRuns'
+import { Extraction, LibraryPrep, LibraryPrepCreate, LibraryPrepUpdate, PCRSample } from '../types'
 import { useAuth } from '../context/AuthContext'
 import { QcStatusTag, QcStatusSelect } from '../components/QcStatusTag'
-import { SpecimenCodeAutocomplete } from '../components/SpecimenCodeAutocomplete'
 import { useTesseraUrl } from '../hooks/useTesseraUrl'
 import { SampleTypeTag, SampleTypeSelect } from '../components/SampleTypeTag'
 import RunAttachmentsPanel from '../components/RunAttachmentsPanel'
@@ -29,6 +29,7 @@ export default function LibraryPrepRunDetailPage() {
   const tesseraUrl = useTesseraUrl()
   const { data: run, isLoading } = useLibraryPrepRun(runId)
   const { data: allExtractions } = useAllExtractions()
+  const { data: allPCRSamples } = useAllPCRSamples()
   const addPrep = useAddLibraryPrep(runId)
   const updatePrep = useUpdateLibraryPrep(runId)
   const deletePrep = useDeleteLibraryPrep(runId)
@@ -44,26 +45,30 @@ export default function LibraryPrepRunDetailPage() {
   const extractionMap: Record<number, Extraction> = {}
   allExtractions?.forEach(e => { extractionMap[e.id] = e })
 
-  const extractionOptions = allExtractions?.map(e => ({
-    label: `${e.specimen_code} (ID ${e.id})`,
-    value: e.id,
-  })) ?? []
+  const pcrSampleMap: Record<number, PCRSample> = {}
+  allPCRSamples?.forEach(s => { pcrSampleMap[s.id] = s })
+
+  const extractionOptions = allExtractions?.map(e => {
+    const runLabel = e.run_date ? e.run_date : `Run #${e.run_id}`
+    const typeLabel = e.extraction_type ? ` · ${e.extraction_type}` : ''
+    return { label: `${e.specimen_code} — Ext. Run #${e.run_id} (${runLabel}${typeLabel})`, value: e.id }
+  }) ?? []
+
+  const pcrOptions = allPCRSamples?.map(s => {
+    const code = s.specimen_code
+    const runLabel = s.run_date ? s.run_date : `Run #${s.run_id}`
+    const regionLabel = s.target_region ? ` · ${s.target_region}` : ''
+    return {
+      label: code ? `${code} — PCR Run #${s.run_id} (${runLabel}${regionLabel})` : `PCR Sample #${s.id}`,
+      value: s.id,
+    }
+  }) ?? []
 
   const handleAddPrep = async (values: LibraryPrepCreate) => {
     await addPrep.mutateAsync(values)
     message.success('Library prep added')
     addForm.resetFields()
     setAddModalOpen(false)
-    const code = values.specimen_code
-    if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
-      const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'library_prep' })
-      notification.info({
-        message: 'Record usage in Tessera',
-        description: `Log what was taken from ${code}`,
-        btn: <Button type="primary" size="small" onClick={() => window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')}>Open Tessera</Button>,
-        duration: 12,
-      })
-    }
   }
 
   const handleEditSave = async (values: LibraryPrepUpdate) => {
@@ -76,6 +81,14 @@ export default function LibraryPrepRunDetailPage() {
   const onExtractionChange = (form: ReturnType<typeof Form.useForm>[0]) => (extractionId: number | undefined) => {
     if (extractionId && extractionMap[extractionId]) {
       form.setFieldValue('specimen_code', extractionMap[extractionId].specimen_code)
+      form.setFieldValue('pcr_sample_id', undefined)
+    }
+  }
+
+  const onPCRSampleChange = (form: ReturnType<typeof Form.useForm>[0]) => (pcrSampleId: number | undefined) => {
+    if (pcrSampleId && pcrSampleMap[pcrSampleId]) {
+      form.setFieldValue('specimen_code', pcrSampleMap[pcrSampleId].specimen_code)
+      form.setFieldValue('extraction_id', undefined)
     }
   }
 
@@ -105,8 +118,39 @@ export default function LibraryPrepRunDetailPage() {
       title: 'Sample Code',
       key: 'specimen',
       render: (_: unknown, r: LibraryPrep) => {
-        const code = r.specimen_code ?? r.extraction?.specimen_code
-        return code ? <Tag color="blue">{code}</Tag> : '—'
+        const code = r.specimen_code ?? r.extraction?.specimen_code ?? r.pcr_sample?.specimen_code
+        if (!code) return '—'
+        if (tesseraUrl && !['NTC', 'EXB'].includes(code)) {
+          return (
+            <a href={`${tesseraUrl}/specimens/find?code=${code}`} target="_blank" rel="noopener noreferrer">
+              <Tag color="blue">{code}</Tag>
+            </a>
+          )
+        }
+        return <Tag color="blue">{code}</Tag>
+      },
+    },
+    {
+      title: 'From',
+      key: 'source',
+      render: (_: unknown, r: LibraryPrep) => {
+        if (r.extraction) {
+          return (
+            <Button type="link" size="small" style={{ padding: 0 }}
+              onClick={() => navigate(`/extraction-runs/${r.extraction!.run_id}`)}>
+              Ext. Run #{r.extraction.run_id}
+            </Button>
+          )
+        }
+        if (r.pcr_sample) {
+          return (
+            <Button type="link" size="small" style={{ padding: 0 }}
+              onClick={() => navigate(`/pcr-runs/${r.pcr_sample!.run_id}`)}>
+              PCR Run #{r.pcr_sample.run_id}
+            </Button>
+          )
+        }
+        return '—'
       },
     },
     { title: 'Sample Name', dataIndex: 'sample_name', key: 'sample_name', render: (v: string) => v ?? '—' },
@@ -124,12 +168,6 @@ export default function LibraryPrepRunDetailPage() {
           <Button type="link" icon={<EditOutlined />} onClick={() => { setEditSample(record); editForm.setFieldsValue(record) }} />
           <Popconfirm
             title="Delete?"
-            description={(() => {
-              const code = record.specimen_code || record.extraction?.specimen_code
-              return tesseraUrl && code && !['NTC', 'EXB'].includes(code)
-                ? 'This will unlink the specimen from its Tessera usage record. The usage record itself will not be deleted.'
-                : undefined
-            })()}
             onConfirm={() => deletePrep.mutateAsync(record.id).then(() => message.success('Deleted'))}
           >
             <Button type="link" danger icon={<DeleteOutlined />} />
@@ -145,7 +183,7 @@ export default function LibraryPrepRunDetailPage() {
       <Form.Item label="Sample Type" name="sample_type">
         <SampleTypeSelect />
       </Form.Item>
-      <Form.Item label="Extraction (optional — link to DB record)" name="extraction_id">
+      <Form.Item label="Link to extraction" name="extraction_id" extra="Select if this library was prepared from a stored DNA extract">
         <Select
           allowClear
           showSearch
@@ -155,8 +193,18 @@ export default function LibraryPrepRunDetailPage() {
           onChange={onExtractionChange(form)}
         />
       </Form.Item>
-      <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled when extraction is selected; edit freely for pre-database specimens">
-        <SpecimenCodeAutocomplete placeholder="e.g. AMPH2024-042" />
+      <Form.Item label="— or — Link to PCR product" name="pcr_sample_id" extra="Select if this library was prepared from a PCR amplicon">
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder="Search by specimen code…"
+          options={pcrOptions}
+          onChange={onPCRSampleChange(form)}
+        />
+      </Form.Item>
+      <Form.Item label="Sample Code" name="specimen_code" extra="Auto-filled from extraction or PCR sample above">
+        <Input placeholder="e.g. AMPH2024-042" />
       </Form.Item>
       <Form.Item label="Sample Name" name="sample_name"><Input placeholder="Library sample name" /></Form.Item>
       <Form.Item label="Index i7" name="index_i7"><Input placeholder="e.g. N701" /></Form.Item>
@@ -186,16 +234,6 @@ export default function LibraryPrepRunDetailPage() {
           {user?.is_admin && (
             <Popconfirm
               title="Delete this run?"
-              description={(() => {
-                if (!tesseraUrl) return undefined
-                const n = (run.samples ?? []).filter(s => {
-                  const code = s.specimen_code || s.extraction?.specimen_code
-                  return code && !['NTC', 'EXB'].includes(code)
-                }).length
-                return n > 0
-                  ? `${n} specimen${n === 1 ? '' : 's'} will be unlinked from their Tessera usage records. The usage records themselves will not be deleted.`
-                  : undefined
-              })()}
               onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/library-prep-runs') })}
             >
               <Button danger>Delete Run</Button>

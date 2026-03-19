@@ -11,6 +11,7 @@ from app.database import Base
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.extraction_run import Extraction
+    from app.models.pcr_run import PCRSample
     from app.models.protocol import Protocol
 
 
@@ -44,6 +45,7 @@ class LibraryPrep(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     run_id: Mapped[int] = mapped_column(ForeignKey("library_prep_runs.id"), nullable=False)
     extraction_id: Mapped[Optional[int]] = mapped_column(ForeignKey("extractions.id"), nullable=True)
+    pcr_sample_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pcr_samples.id"), nullable=True)
     specimen_code: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     index_i7: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     index_i5: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -57,4 +59,5 @@ class LibraryPrep(Base):
 
     run: Mapped["LibraryPrepRun"] = relationship("LibraryPrepRun", back_populates="samples")
     extraction: Mapped[Optional["Extraction"]] = relationship("Extraction", foreign_keys=[extraction_id])
+    pcr_sample: Mapped[Optional["PCRSample"]] = relationship("PCRSample", foreign_keys=[pcr_sample_id])
     ngs_run_libraries = relationship("NGSRunLibrary", back_populates="library_prep", cascade="all, delete-orphan")

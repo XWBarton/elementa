@@ -5,11 +5,13 @@ from pydantic import BaseModel
 
 from app.schemas.user import UserRead
 from app.schemas.extraction_run import ExtractionRead
+from app.schemas.pcr_run import PCRSampleRead
 from app.schemas.protocol import ProtocolRead
 
 
 class LibraryPrepCreate(BaseModel):
     extraction_id: Optional[int] = None
+    pcr_sample_id: Optional[int] = None
     specimen_code: Optional[str] = None
     index_i7: Optional[str] = None
     index_i5: Optional[str] = None
@@ -24,6 +26,7 @@ class LibraryPrepCreate(BaseModel):
 
 class LibraryPrepUpdate(BaseModel):
     extraction_id: Optional[int] = None
+    pcr_sample_id: Optional[int] = None
     specimen_code: Optional[str] = None
     index_i7: Optional[str] = None
     index_i5: Optional[str] = None
@@ -41,6 +44,8 @@ class LibraryPrepRead(BaseModel):
     run_id: int
     extraction_id: Optional[int] = None
     extraction: Optional[ExtractionRead] = None
+    pcr_sample_id: Optional[int] = None
+    pcr_sample: Optional[PCRSampleRead] = None
     specimen_code: Optional[str] = None
     index_i7: Optional[str] = None
     index_i5: Optional[str] = None

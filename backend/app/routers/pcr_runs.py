@@ -44,9 +44,22 @@ def create_run(data: PCRRunCreate, db: Session = Depends(get_db), _=Depends(get_
     return _run_detail(obj)
 
 
-@router.get("/all-samples", response_model=list[PCRSampleRead])
+@router.get("/all-samples")
 def all_pcr_samples(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    return crud.list_all_pcr_samples(db)
+    samples = crud.list_all_pcr_samples(db)
+    return [
+        {
+            "id": s.id,
+            "run_id": s.run_id,
+            "run_date": str(s.run.run_date) if s.run and s.run.run_date else None,
+            "target_region": s.run.target_region if s.run else None,
+            "extraction_id": s.extraction_id,
+            "specimen_code": s.specimen_code or (s.extraction.specimen_code if s.extraction else None),
+            "qc_status": s.qc_status,
+            "sample_type": s.sample_type,
+        }
+        for s in samples
+    ]
 
 
 @router.get("/{run_id}", response_model=PCRRunDetail)
