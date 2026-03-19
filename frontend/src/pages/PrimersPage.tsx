@@ -605,19 +605,44 @@ export default function PrimersPage() {
             </div>
             {viewingPrimer.pairs?.length > 0 && (
               <div>
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Pairs with</Typography.Text>
-                <Space size={[6, 6]} wrap>
-                  {viewingPrimer.pairs.map(p => (
-                    <Tag
-                      key={p.id}
-                      color={p.direction === 'F' ? 'blue' : p.direction === 'R' ? 'volcano' : 'default'}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => { setViewingPrimer(allPrimers?.find(x => x.id === p.id) ?? null) }}
-                    >
-                      {p.name}{p.direction ? ` (${p.direction})` : ''}
-                    </Tag>
-                  ))}
-                </Space>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Pairs with</Typography.Text>
+                <Table
+                  size="small"
+                  pagination={false}
+                  rowKey="id"
+                  dataSource={viewingPrimer.pairs.map(p => allPrimers?.find(x => x.id === p.id) ?? p)}
+                  onRow={(p) => ({ onClick: () => setViewingPrimer(allPrimers?.find(x => x.id === p.id) ?? null), style: { cursor: 'pointer' } })}
+                  columns={[
+                    {
+                      title: 'Name',
+                      key: 'name',
+                      render: (_: unknown, p: Primer) => (
+                        <Space size={6}>
+                          <Typography.Link style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>
+                            {p.name}
+                          </Typography.Link>
+                          {p.direction && (
+                            <Tag color={p.direction === 'F' ? 'blue' : 'volcano'} style={{ margin: 0 }}>{p.direction}</Tag>
+                          )}
+                        </Space>
+                      ),
+                    },
+                    {
+                      title: "Sequence",
+                      key: 'sequence',
+                      render: (_: unknown, p: Primer) => (p as Primer).sequence
+                        ? <NucleotideSeq seq={(p as Primer).sequence!} maxLen={22} />
+                        : <Typography.Text type="secondary">—</Typography.Text>,
+                    },
+                    {
+                      title: 'Target Gene',
+                      key: 'target_gene',
+                      render: (_: unknown, p: Primer) => (p as Primer).target_gene
+                        ? <span style={{ fontSize: 12 }}>{(p as Primer).target_gene}</span>
+                        : <Typography.Text type="secondary">—</Typography.Text>,
+                    },
+                  ]}
+                />
               </div>
             )}
             {viewingPrimer.reference && (
