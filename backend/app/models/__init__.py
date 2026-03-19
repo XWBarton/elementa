@@ -1,5 +1,6 @@
 from app.models.user import User
 from app.models.app_setting import AppSetting
+from app.models.project import Project
 from app.models.protocol import Protocol
 from app.models.primer import Primer
 from app.models.extraction_run import ExtractionRun, Extraction
@@ -11,6 +12,7 @@ from app.models.run_attachment import RunAttachment
 
 __all__ = [
     "User",
+    "Project",
     "Protocol",
     "Primer",
     "ExtractionRun", "Extraction",

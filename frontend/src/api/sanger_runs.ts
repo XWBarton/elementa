@@ -9,7 +9,7 @@ import {
   PaginatedResponse,
 } from '../types'
 
-export async function getSangerRuns(params?: { skip?: number; limit?: number }): Promise<PaginatedResponse<SangerRun>> {
+export async function getSangerRuns(params?: { skip?: number; limit?: number; project_id?: number; operator_id?: number }): Promise<PaginatedResponse<SangerRun>> {
   const { data } = await client.get('/sanger-runs/', { params })
   return data
 }

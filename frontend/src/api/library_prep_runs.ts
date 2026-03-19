@@ -9,7 +9,7 @@ import {
   PaginatedResponse,
 } from '../types'
 
-export async function getLibraryPrepRuns(params?: { skip?: number; limit?: number }): Promise<PaginatedResponse<LibraryPrepRun>> {
+export async function getLibraryPrepRuns(params?: { skip?: number; limit?: number; project_id?: number; operator_id?: number }): Promise<PaginatedResponse<LibraryPrepRun>> {
   const { data } = await client.get('/library-prep-runs/', { params })
   return data
 }

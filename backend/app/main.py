@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.dependencies import get_current_user, get_db
-from app.routers import auth, users, ngs, setup, admin
+from app.routers import auth, users, ngs, setup, admin, projects
 from app.routers import extraction_runs, pcr_runs, sanger_runs, library_prep_runs
 from app.routers import export, attachments, protocols, primers
 
@@ -44,6 +44,11 @@ def migrate_db():
         ("ngs_runs", "protocol_id", "ALTER TABLE ngs_runs ADD COLUMN protocol_id INTEGER REFERENCES protocols(id)"),
         ("sanger_samples", "sequence", "ALTER TABLE sanger_samples ADD COLUMN sequence TEXT"),
         ("library_preps", "pcr_sample_id", "ALTER TABLE library_preps ADD COLUMN pcr_sample_id INTEGER REFERENCES pcr_samples(id)"),
+        ("extraction_runs", "project_id", "ALTER TABLE extraction_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
+        ("pcr_runs", "project_id", "ALTER TABLE pcr_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
+        ("sanger_runs", "project_id", "ALTER TABLE sanger_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
+        ("library_prep_runs", "project_id", "ALTER TABLE library_prep_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
+        ("ngs_runs", "project_id", "ALTER TABLE ngs_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
     ]
     with engine.connect() as conn:
         for table, column, sql in migrations:
@@ -100,6 +105,7 @@ app.add_middleware(
 )
 
 app.include_router(setup.router)
+app.include_router(projects.router)
 app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(users.router)

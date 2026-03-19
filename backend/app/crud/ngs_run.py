@@ -23,6 +23,8 @@ def get_ngs_runs(
     platform: Optional[str] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    project_id: Optional[int] = None,
+    operator_id: Optional[int] = None,
 ) -> Tuple[List[NGSRun], int]:
     q = _base_query(db)
     if platform:
@@ -31,6 +33,10 @@ def get_ngs_runs(
         q = q.filter(NGSRun.date >= date_from)
     if date_to:
         q = q.filter(NGSRun.date <= date_to)
+    if project_id is not None:
+        q = q.filter(NGSRun.project_id == project_id)
+    if operator_id is not None:
+        q = q.filter(NGSRun.operator_id == operator_id)
     total = q.count()
     items = q.order_by(NGSRun.created_at.desc()).offset(skip).limit(limit).all()
     return items, total

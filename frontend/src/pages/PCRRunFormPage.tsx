@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useCreatePCRRun, usePCRRun, useUpdatePCRRun } from '../hooks/usePCRRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
 import { PCRRunCreate } from '../types'
 
@@ -15,6 +16,7 @@ export default function PCRRunFormPage() {
 
   const { data: run } = usePCRRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
+  const { data: projects } = useProjects()
   const { data: protocols } = useAllProtocols()
   const createRun = useCreatePCRRun()
   const updateRun = useUpdatePCRRun()
@@ -49,6 +51,10 @@ export default function PCRRunFormPage() {
           <Form.Item label="Operator" name="operator_id">
             <Select allowClear placeholder="Select operator"
               options={usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []} />
+          </Form.Item>
+          <Form.Item label="Project" name="project_id">
+            <Select allowClear showSearch optionFilterProp="label" placeholder="Assign to project (optional)"
+              options={projects?.map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []} />
           </Form.Item>
           <Form.Item label="Protocol (SOP)" name="protocol_id">
             <Select

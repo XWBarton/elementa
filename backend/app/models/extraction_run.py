@@ -11,6 +11,7 @@ from app.database import Base
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.protocol import Protocol
+    from app.models.project import Project
 
 
 class ExtractionRun(Base):
@@ -20,6 +21,7 @@ class ExtractionRun(Base):
     run_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     operator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     protocol_id: Mapped[Optional[int]] = mapped_column(ForeignKey("protocols.id"), nullable=True)
+    project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
     kit: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     extraction_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     container_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
@@ -33,6 +35,7 @@ class ExtractionRun(Base):
 
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
+    project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
     samples: Mapped[list["Extraction"]] = relationship(
         "Extraction", back_populates="run", cascade="all, delete-orphan"
     )

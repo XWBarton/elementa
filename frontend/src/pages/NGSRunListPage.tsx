@@ -3,6 +3,8 @@ import { Button, Popconfirm, Select, Space, Table, Tag, Typography, message } fr
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useNGSRuns, useDeleteNGSRun } from '../hooks/useNGSRuns'
+import { useProjects } from '../hooks/useProjects'
+import { useUsers } from '../hooks/useUsers'
 import { useAuth } from '../context/AuthContext'
 import { NGSPlatform, NGSRun } from '../types'
 
@@ -16,11 +18,21 @@ export default function NGSRunListPage() {
   const { user } = useAuth()
   const [page, setPage] = useState(1)
   const [platform, setPlatform] = useState<string | undefined>()
+  const [projectId, setProjectId] = useState<number | undefined>()
+  const [operatorId, setOperatorId] = useState<number | undefined>()
   const pageSize = 20
-  const { data, isLoading } = useNGSRuns({ skip: (page - 1) * pageSize, limit: pageSize, platform })
+  const { data, isLoading } = useNGSRuns({ skip: (page - 1) * pageSize, limit: pageSize, platform, project_id: projectId, operator_id: operatorId })
   const deleteMutation = useDeleteNGSRun()
+  const { data: projects } = useProjects()
+  const { data: usersData } = useUsers({ limit: 200 })
 
   const columns = [
+    {
+      title: 'Project',
+      key: 'project',
+      render: (_: unknown, record: NGSRun) =>
+        record.project ? <Tag color="blue">{record.project.code}</Tag> : '—',
+    },
     { title: 'ID', dataIndex: 'id', key: 'id' },
     { title: 'Run ID', dataIndex: 'run_id', key: 'run_id' },
     { title: 'Platform', dataIndex: 'platform', key: 'platform', render: (v: string) => <Tag color={PLATFORM_COLORS[v]}>{v}</Tag> },
@@ -63,7 +75,7 @@ export default function NGSRunListPage() {
           New NGS Run
         </Button>
       </div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
         <Select
           placeholder="Filter by platform"
           allowClear
@@ -71,6 +83,17 @@ export default function NGSRunListPage() {
           value={platform}
           onChange={(v) => { setPlatform(v); setPage(1) }}
           options={PLATFORMS.map((p) => ({ label: p, value: p }))}
+        />
+        <Select
+          allowClear placeholder="Filter by project" style={{ width: 200 }}
+          options={projects?.map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []}
+          onChange={(v) => { setProjectId(v); setPage(1) }} value={projectId}
+        />
+        <Select
+          allowClear placeholder="Filter by operator" style={{ width: 180 }}
+          showSearch optionFilterProp="label"
+          options={usersData?.items.map(u => ({ label: u.full_name || u.username, value: u.id })) ?? []}
+          onChange={(v) => { setOperatorId(v); setPage(1) }} value={operatorId}
         />
       </Space>
       <Table dataSource={data?.items ?? []} columns={columns} rowKey="id" loading={isLoading}

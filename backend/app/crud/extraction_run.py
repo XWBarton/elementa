@@ -20,9 +20,22 @@ def _run_query(db: Session):
     )
 
 
-def get_runs(db: Session, skip: int = 0, limit: int = 50) -> Tuple[List[ExtractionRun], int]:
+def get_runs(
+    db: Session,
+    skip: int = 0,
+    limit: int = 50,
+    project_id: Optional[int] = None,
+    operator_id: Optional[int] = None,
+) -> Tuple[List[ExtractionRun], int]:
     q = _run_query(db)
-    total = db.query(func.count(ExtractionRun.id)).scalar()
+    cq = db.query(func.count(ExtractionRun.id))
+    if project_id is not None:
+        q = q.filter(ExtractionRun.project_id == project_id)
+        cq = cq.filter(ExtractionRun.project_id == project_id)
+    if operator_id is not None:
+        q = q.filter(ExtractionRun.operator_id == operator_id)
+        cq = cq.filter(ExtractionRun.operator_id == operator_id)
+    total = cq.scalar()
     items = q.order_by(ExtractionRun.created_at.desc()).offset(skip).limit(limit).all()
     return items, total
 

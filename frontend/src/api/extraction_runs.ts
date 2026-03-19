@@ -9,7 +9,7 @@ import {
   PaginatedResponse,
 } from '../types'
 
-export async function getExtractionRuns(params?: { skip?: number; limit?: number }): Promise<PaginatedResponse<ExtractionRun>> {
+export async function getExtractionRuns(params?: { skip?: number; limit?: number; project_id?: number; operator_id?: number }): Promise<PaginatedResponse<ExtractionRun>> {
   const { data } = await client.get('/extraction-runs/', { params })
   return data
 }

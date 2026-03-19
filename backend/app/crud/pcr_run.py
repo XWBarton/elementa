@@ -15,9 +15,23 @@ def _run_query(db: Session):
     )
 
 
-def get_runs(db: Session, skip: int = 0, limit: int = 50) -> Tuple[List[PCRRun], int]:
-    total = db.query(func.count(PCRRun.id)).scalar()
-    items = _run_query(db).order_by(PCRRun.created_at.desc()).offset(skip).limit(limit).all()
+def get_runs(
+    db: Session,
+    skip: int = 0,
+    limit: int = 50,
+    project_id: Optional[int] = None,
+    operator_id: Optional[int] = None,
+) -> Tuple[List[PCRRun], int]:
+    q = _run_query(db)
+    cq = db.query(func.count(PCRRun.id))
+    if project_id is not None:
+        q = q.filter(PCRRun.project_id == project_id)
+        cq = cq.filter(PCRRun.project_id == project_id)
+    if operator_id is not None:
+        q = q.filter(PCRRun.operator_id == operator_id)
+        cq = cq.filter(PCRRun.operator_id == operator_id)
+    total = cq.scalar()
+    items = q.order_by(PCRRun.created_at.desc()).offset(skip).limit(limit).all()
     return items, total
 
 

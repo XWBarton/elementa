@@ -10,6 +10,7 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.protocol import Protocol
+    from app.models.project import Project
 
 
 class NGSRun(Base):
@@ -22,6 +23,7 @@ class NGSRun(Base):
     date: Mapped[Optional[date]] = mapped_column(Date)
     operator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     protocol_id: Mapped[Optional[int]] = mapped_column(ForeignKey("protocols.id"), nullable=True)
+    project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
     flow_cell_id: Mapped[Optional[str]] = mapped_column(String(200))
     reagent_kit: Mapped[Optional[str]] = mapped_column(String(200))
     output_path: Mapped[Optional[str]] = mapped_column(String(500))
@@ -36,6 +38,7 @@ class NGSRun(Base):
 
     operator = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
+    project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
     libraries = relationship("NGSRunLibrary", back_populates="ngs_run", cascade="all, delete-orphan")
 
 

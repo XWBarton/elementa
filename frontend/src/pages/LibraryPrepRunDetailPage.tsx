@@ -245,6 +245,9 @@ export default function LibraryPrepRunDetailPage() {
         <Descriptions bordered column={2} size="small">
           <Descriptions.Item label="Date">{run.run_date ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Operator">{run.operator?.username ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label="Project">
+            {run.project ? <Tag color="blue">{run.project.code} — {run.project.name}</Tag> : '—'}
+          </Descriptions.Item>
           <Descriptions.Item label="Kit">{run.kit ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Target Region">{run.target_region ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Primers">{[run.primer_f, run.primer_r].filter(Boolean).join(' / ') || '—'}</Descriptions.Item>

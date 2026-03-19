@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.schemas.user import UserRead
 from app.schemas.library_prep_run import LibraryPrepRead
 from app.schemas.protocol import ProtocolRead
+from app.schemas.project import ProjectRead
 
 
 class NGSRunLibraryCreate(BaseModel):
@@ -37,6 +38,7 @@ class NGSRunCreate(BaseModel):
     date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None
@@ -54,6 +56,7 @@ class NGSRunUpdate(BaseModel):
     date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None
@@ -74,6 +77,8 @@ class NGSRunRead(BaseModel):
     operator: Optional[UserRead] = None
     protocol_id: Optional[int] = None
     protocol: Optional[ProtocolRead] = None
+    project_id: Optional[int] = None
+    project: Optional[ProjectRead] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     output_path: Optional[str] = None

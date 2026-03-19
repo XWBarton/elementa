@@ -1,7 +1,7 @@
 import client from './client'
 import { NGSRun, NGSRunCreate, NGSRunUpdate, PaginatedResponse } from '../types'
 
-export async function getNGSRuns(params?: { skip?: number; limit?: number; platform?: string; date_from?: string; date_to?: string }): Promise<PaginatedResponse<NGSRun>> {
+export async function getNGSRuns(params?: { skip?: number; limit?: number; platform?: string; date_from?: string; date_to?: string; project_id?: number; operator_id?: number }): Promise<PaginatedResponse<NGSRun>> {
   const { data } = await client.get('/ngs-runs/', { params })
   return data
 }

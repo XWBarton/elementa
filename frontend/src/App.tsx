@@ -39,6 +39,7 @@ import ProtocolFormPage from './pages/ProtocolFormPage'
 import ProtocolDetailPage from './pages/ProtocolDetailPage'
 
 import PrimersPage from './pages/PrimersPage'
+import ProjectsPage from './pages/ProjectsPage'
 import ExportPage from './pages/ExportPage'
 import HelpPage from './pages/HelpPage'
 
@@ -87,6 +88,9 @@ export default function App() {
             <Route path="/protocols/new" element={<ProtocolFormPage />} />
             <Route path="/protocols/:id" element={<ProtocolDetailPage />} />
             <Route path="/protocols/:id/edit" element={<ProtocolFormPage />} />
+
+            {/* Projects */}
+            <Route path="/projects" element={<ProjectsPage />} />
 
             {/* Primers */}
             <Route path="/primers" element={<PrimersPage />} />

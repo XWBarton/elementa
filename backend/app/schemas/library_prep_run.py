@@ -7,6 +7,7 @@ from app.schemas.user import UserRead
 from app.schemas.extraction_run import ExtractionRead
 from app.schemas.pcr_run import PCRSampleRead
 from app.schemas.protocol import ProtocolRead
+from app.schemas.project import ProjectRead
 
 
 class LibraryPrepCreate(BaseModel):
@@ -65,6 +66,7 @@ class LibraryPrepRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None
@@ -76,6 +78,7 @@ class LibraryPrepRunUpdate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None
@@ -90,6 +93,8 @@ class LibraryPrepRunRead(BaseModel):
     operator: Optional[UserRead] = None
     protocol_id: Optional[int] = None
     protocol: Optional[ProtocolRead] = None
+    project_id: Optional[int] = None
+    project: Optional[ProjectRead] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_f: Optional[str] = None

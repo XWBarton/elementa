@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.schemas.user import UserRead
 from app.schemas.protocol import ProtocolRead
+from app.schemas.project import ProjectRead
 
 
 class ExtractionCreate(BaseModel):
@@ -61,6 +62,7 @@ class ExtractionRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None
@@ -73,6 +75,7 @@ class ExtractionRunUpdate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None
@@ -88,6 +91,8 @@ class ExtractionRunRead(BaseModel):
     operator: Optional[UserRead] = None
     protocol_id: Optional[int] = None
     protocol: Optional[ProtocolRead] = None
+    project_id: Optional[int] = None
+    project: Optional[ProjectRead] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None

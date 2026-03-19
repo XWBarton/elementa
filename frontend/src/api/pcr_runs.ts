@@ -9,7 +9,7 @@ import {
   PaginatedResponse,
 } from '../types'
 
-export async function getPCRRuns(params?: { skip?: number; limit?: number }): Promise<PaginatedResponse<PCRRun>> {
+export async function getPCRRuns(params?: { skip?: number; limit?: number; project_id?: number; operator_id?: number }): Promise<PaginatedResponse<PCRRun>> {
   const { data } = await client.get('/pcr-runs/', { params })
   return data
 }

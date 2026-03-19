@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useNGSRun, useCreateNGSRun, useUpdateNGSRun } from '../hooks/useNGSRuns'
 import { useAllLibraryPreps } from '../hooks/useLibraryPrepRuns'
 import { useUsers } from '../hooks/useUsers'
+import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
 import { LibraryPrep, NGSPlatform } from '../types'
 
@@ -18,6 +19,7 @@ export default function NGSRunFormPage() {
 
   const { data: existing } = useNGSRun(isEdit ? Number(id) : 0)
   const { data: users } = useUsers()
+  const { data: projects } = useProjects()
   const { data: libraryPreps } = useAllLibraryPreps()
   const { data: protocols } = useAllProtocols()
   const createMutation = useCreateNGSRun()
@@ -93,6 +95,12 @@ export default function NGSRunFormPage() {
             <Col span={6}>
               <Form.Item name="operator_id" label="Operator">
                 <Select options={userOptions} allowClear />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="project_id" label="Project">
+                <Select allowClear showSearch optionFilterProp="label" placeholder="Optional"
+                  options={projects?.map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []} />
               </Form.Item>
             </Col>
             <Col span={6}>

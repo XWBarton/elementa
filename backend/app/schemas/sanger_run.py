@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.schemas.user import UserRead
 from app.schemas.pcr_run import PCRSampleRead
 from app.schemas.protocol import ProtocolRead
+from app.schemas.project import ProjectRead
 
 
 class SangerSampleCreate(BaseModel):
@@ -54,6 +55,7 @@ class SangerRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None
@@ -65,6 +67,7 @@ class SangerRunUpdate(BaseModel):
     run_date: Optional[date] = None
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
+    project_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None
@@ -79,6 +82,8 @@ class SangerRunRead(BaseModel):
     operator: Optional[UserRead] = None
     protocol_id: Optional[int] = None
     protocol: Optional[ProtocolRead] = None
+    project_id: Optional[int] = None
+    project: Optional[ProjectRead] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None

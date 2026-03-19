@@ -255,6 +255,9 @@ export default function ExtractionRunDetailPage() {
         <Descriptions bordered column={2} size="small">
           <Descriptions.Item label="Date">{run.run_date ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Operator">{run.operator?.username ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label="Project">
+            {run.project ? <Tag color="blue">{run.project.code} — {run.project.name}</Tag> : '—'}
+          </Descriptions.Item>
           <Descriptions.Item label="Kit">{run.kit ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Type">{run.extraction_type ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Container">{run.container_type ?? '—'}</Descriptions.Item>

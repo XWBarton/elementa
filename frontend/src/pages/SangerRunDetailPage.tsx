@@ -367,6 +367,9 @@ export default function SangerRunDetailPage() {
         <Descriptions bordered column={2} size="small">
           <Descriptions.Item label="Date">{run.run_date ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Operator">{run.operator?.username ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label="Project">
+            {run.project ? <Tag color="blue">{run.project.code} — {run.project.name}</Tag> : '—'}
+          </Descriptions.Item>
           <Descriptions.Item label="Primer">{run.primer ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Direction">{run.direction ? <Tag>{run.direction}</Tag> : '—'}</Descriptions.Item>
           <Descriptions.Item label="Provider">{run.service_provider ?? '—'}</Descriptions.Item>

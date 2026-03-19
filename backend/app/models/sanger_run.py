@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.pcr_run import PCRSample
     from app.models.protocol import Protocol
+    from app.models.project import Project
 
 
 class SangerRun(Base):
@@ -21,6 +22,7 @@ class SangerRun(Base):
     run_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     operator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     protocol_id: Mapped[Optional[int]] = mapped_column(ForeignKey("protocols.id"), nullable=True)
+    project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
     primer: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     direction: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     service_provider: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -33,6 +35,7 @@ class SangerRun(Base):
 
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
+    project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
     samples: Mapped[list["SangerSample"]] = relationship(
         "SangerSample", back_populates="run", cascade="all, delete-orphan"
     )

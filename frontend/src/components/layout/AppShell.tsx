@@ -13,6 +13,7 @@ import {
   FileTextOutlined,
   RetweetOutlined,
   QuestionCircleOutlined,
+  FolderOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import React, { useEffect, useRef, useState } from 'react'
@@ -34,7 +35,10 @@ const menuItems = [
   { key: '/export', icon: <DownloadOutlined />, label: 'Export' },
 ]
 
-const adminItem = { key: '/admin', icon: <SettingOutlined />, label: 'Settings' }
+const adminItems = [
+  { key: '/projects', icon: <FolderOutlined />, label: 'Projects' },
+  { key: '/admin', icon: <SettingOutlined />, label: 'Settings' },
+]
 const bottomItems = [{ key: '/help', icon: <QuestionCircleOutlined />, label: 'Help' }]
 
 export default function AppShell() {
@@ -69,7 +73,7 @@ export default function AppShell() {
     e.target.value = ''
   }
 
-  const allItems = user?.is_admin ? [...menuItems, adminItem] : menuItems
+  const allItems = user?.is_admin ? [...menuItems, ...adminItems] : menuItems
 
   const selectedKey =
     [...allItems, ...bottomItems]

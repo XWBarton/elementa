@@ -1,5 +1,6 @@
 import csv
 import io
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -33,8 +34,15 @@ def _run_detail(obj) -> LibraryPrepRunDetail:
 
 
 @router.get("/", response_model=dict)
-def list_runs(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    items, total = crud.get_runs(db, skip=skip, limit=limit)
+def list_runs(
+    skip: int = 0,
+    limit: int = 50,
+    project_id: Optional[int] = None,
+    operator_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    items, total = crud.get_runs(db, skip=skip, limit=limit, project_id=project_id, operator_id=operator_id)
     return {"items": [_run_read(i) for i in items], "total": total, "skip": skip, "limit": limit}
 
 

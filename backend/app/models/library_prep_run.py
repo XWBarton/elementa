@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.extraction_run import Extraction
     from app.models.pcr_run import PCRSample
     from app.models.protocol import Protocol
+    from app.models.project import Project
 
 
 class LibraryPrepRun(Base):
@@ -22,6 +23,7 @@ class LibraryPrepRun(Base):
     run_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     operator_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     protocol_id: Mapped[Optional[int]] = mapped_column(ForeignKey("protocols.id"), nullable=True)
+    project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
     kit: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     target_region: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     primer_f: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -34,6 +36,7 @@ class LibraryPrepRun(Base):
 
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
+    project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
     samples: Mapped[list["LibraryPrep"]] = relationship(
         "LibraryPrep", back_populates="run", cascade="all, delete-orphan"
     )

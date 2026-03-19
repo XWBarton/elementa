@@ -1,3 +1,32 @@
+// ── Projects ──────────────────────────────────────────────────────
+
+export interface ProjectMember {
+  id: number
+  username: string
+  full_name?: string
+}
+
+export interface Project {
+  id: number
+  code: string
+  name: string
+  description?: string
+  created_by_id: number
+  created_at: string
+  members: ProjectMember[]
+}
+
+export interface ProjectCreate {
+  code: string
+  name: string
+  description?: string
+}
+
+export interface ProjectUpdate {
+  name?: string
+  description?: string
+}
+
 // ── Protocols ────────────────────────────────────────────────────
 
 export type ProtocolCategory = 'extraction' | 'pcr' | 'sanger' | 'library_prep' | 'ngs' | 'general'
@@ -116,6 +145,8 @@ export interface ExtractionRun {
   operator?: User
   protocol_id?: number
   protocol?: Protocol
+  project_id?: number
+  project?: Project
   kit?: string
   extraction_type?: ExtractionType
   container_type?: string
@@ -131,6 +162,7 @@ export interface ExtractionRunCreate {
   run_date?: string
   operator_id?: number
   protocol_id?: number
+  project_id?: number
   kit?: string
   extraction_type?: ExtractionType
   container_type?: string
@@ -176,6 +208,8 @@ export interface PCRRun {
   operator?: User
   protocol_id?: number
   protocol?: Protocol
+  project_id?: number
+  project?: Project
   target_region?: string
   primer_f?: string
   primer_r?: string
@@ -193,6 +227,7 @@ export interface PCRRunCreate {
   run_date?: string
   operator_id?: number
   protocol_id?: number
+  project_id?: number
   target_region?: string
   primer_f?: string
   primer_r?: string
@@ -243,6 +278,8 @@ export interface SangerRun {
   operator?: User
   protocol_id?: number
   protocol?: Protocol
+  project_id?: number
+  project?: Project
   primer?: string
   direction?: SangerDirection
   service_provider?: string
@@ -257,6 +294,7 @@ export interface SangerRunCreate {
   run_date?: string
   operator_id?: number
   protocol_id?: number
+  project_id?: number
   primer?: string
   direction?: SangerDirection
   service_provider?: string
@@ -311,6 +349,8 @@ export interface LibraryPrepRun {
   operator?: User
   protocol_id?: number
   protocol?: Protocol
+  project_id?: number
+  project?: Project
   kit?: string
   target_region?: string
   primer_f?: string
@@ -325,6 +365,7 @@ export interface LibraryPrepRunCreate {
   run_date?: string
   operator_id?: number
   protocol_id?: number
+  project_id?: number
   kit?: string
   target_region?: string
   primer_f?: string
@@ -354,6 +395,8 @@ export interface NGSRun {
   operator_id?: number
   operator?: User
   protocol_id?: number
+  project_id?: number
+  project?: Project
   protocol?: Protocol
   flow_cell_id?: string
   reagent_kit?: string
@@ -373,6 +416,7 @@ export interface NGSRunCreate {
   date?: string
   operator_id?: number
   protocol_id?: number
+  project_id?: number
   flow_cell_id?: string
   reagent_kit?: string
   output_path?: string

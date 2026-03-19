@@ -23,10 +23,12 @@ def list_runs(
     platform: Optional[str] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    project_id: Optional[int] = None,
+    operator_id: Optional[int] = None,
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    items, total = get_ngs_runs(db, skip=skip, limit=limit, platform=platform, date_from=date_from, date_to=date_to)
+    items, total = get_ngs_runs(db, skip=skip, limit=limit, platform=platform, date_from=date_from, date_to=date_to, project_id=project_id, operator_id=operator_id)
     return {"items": [NGSRunRead.model_validate(i) for i in items], "total": total, "skip": skip, "limit": limit}
 
 
