@@ -8,6 +8,30 @@ import { usePrimers, useCreatePrimer, useUpdatePrimer, useDeletePrimer, useBulkC
 import { useAuth } from '../context/AuthContext'
 import type { Primer, PrimerCreate } from '../types'
 
+const BASE_COLORS: Record<string, string> = {
+  A: '#27ae60',  // green
+  T: '#e74c3c',  // red
+  C: '#2980b9',  // blue
+  G: '#2c3e50',  // near-black
+  U: '#e74c3c',  // RNA uracil = same as T
+}
+const DEGENERATE_COLOR = '#8e44ad' // purple for IUPAC ambiguity codes
+
+function NucleotideSeq({ seq, maxLen }: { seq: string; maxLen?: number }) {
+  const display = maxLen && seq.length > maxLen ? seq.slice(0, maxLen) : seq
+  const truncated = maxLen ? seq.length > maxLen : false
+  return (
+    <span style={{ fontFamily: 'monospace', letterSpacing: 1, fontSize: 11 }}>
+      {display.toUpperCase().split('').map((base, i) => (
+        <span key={i} style={{ color: BASE_COLORS[base] ?? DEGENERATE_COLOR, fontWeight: 600 }}>
+          {base}
+        </span>
+      ))}
+      {truncated && <span style={{ color: '#aaa' }}>…</span>}
+    </span>
+  )
+}
+
 const DIRECTION_OPTIONS = [
   { value: 'F', label: 'F — Forward' },
   { value: 'R', label: 'R — Reverse' },
@@ -107,7 +131,7 @@ function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void })
   const previewColumns = [
     { title: 'Name', dataIndex: 'name', key: 'name', render: (v: string) => <strong style={{ fontFamily: 'monospace' }}>{v}</strong> },
     { title: 'Dir', dataIndex: 'direction', key: 'direction', width: 50, render: (v: string) => v ? <Tag color={v === 'F' ? 'blue' : 'volcano'}>{v}</Tag> : null },
-    { title: 'Sequence', dataIndex: 'sequence', key: 'sequence', render: (v: string) => v ? <Typography.Text code style={{ fontSize: 11 }}>{v}</Typography.Text> : <span style={{ color: '#bbb' }}>—</span> },
+    { title: 'Sequence', dataIndex: 'sequence', key: 'sequence', render: (v: string) => v ? <NucleotideSeq seq={v} maxLen={24} /> : <span style={{ color: '#bbb' }}>—</span> },
     { title: 'Target Gene', dataIndex: 'target_gene', key: 'target_gene', render: (v: string) => v || <span style={{ color: '#bbb' }}>—</span> },
     { title: 'Target Taxa', dataIndex: 'target_taxa', key: 'target_taxa', render: (v: string) => v || <span style={{ color: '#bbb' }}>—</span> },
     { title: 'Ta (°C)', dataIndex: 'annealing_temp_c', key: 'annealing_temp_c', width: 70, render: (v: number) => v != null ? `${v}°C` : <span style={{ color: '#bbb' }}>—</span> },
@@ -331,74 +355,67 @@ export default function PrimersPage() {
 
   const columns = [
     {
-      title: 'Primer',
+      title: 'Name',
       key: 'name',
+      width: 220,
       sorter: (a: Primer, b: Primer) => a.name.localeCompare(b.name),
       render: (_: unknown, r: Primer) => (
-        <div>
-          <Space size={6} style={{ marginBottom: r.sequence ? 4 : 0 }}>
-            <strong style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.name}</strong>
-            {r.direction && (
-              <Tag color={r.direction === 'F' ? 'blue' : 'volcano'} style={{ margin: 0, fontWeight: 600 }}>
-                {r.direction}
-              </Tag>
-            )}
-          </Space>
-          {r.sequence && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-              <Typography.Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>5′—</Typography.Text>
-              <Tooltip title={r.sequence}>
-                <Typography.Text
-                  code
-                  style={{ fontSize: 11, letterSpacing: 0.5, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}
-                >
-                  {r.sequence}
-                </Typography.Text>
-              </Tooltip>
-              <Typography.Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>—3′</Typography.Text>
-              <Tooltip title="Copy sequence">
-                <Button
-                  size="small"
-                  type="text"
-                  icon={<CopyOutlined />}
-                  style={{ padding: '0 2px', height: 18, color: '#aaa' }}
-                  onClick={() => { navigator.clipboard.writeText(r.sequence!); message.success('Copied') }}
-                />
-              </Tooltip>
-            </div>
+        <Space size={6}>
+          <strong style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.name}</strong>
+          {r.direction && (
+            <Tag color={r.direction === 'F' ? 'blue' : 'volcano'} style={{ margin: 0, fontWeight: 600 }}>
+              {r.direction}
+            </Tag>
           )}
-        </div>
+        </Space>
       ),
     },
     {
-      title: 'Target',
-      key: 'target',
-      render: (_: unknown, r: Primer) => (
-        <div>
-          <div style={{ fontWeight: 500, fontSize: 13 }}>{r.target_gene || <span style={{ color: '#bbb' }}>—</span>}</div>
-          {r.target_taxa && (
-            <div style={{ marginTop: 3 }}>
-              {r.target_taxa.split(',').map(t => (
-                <Tag key={t.trim()} style={{ fontSize: 11, marginBottom: 2 }}>{t.trim()}</Tag>
-              ))}
-            </div>
-          )}
-        </div>
-      ),
+      title: "Sequence (5′ → 3′)",
+      key: 'sequence',
+      render: (_: unknown, r: Primer) => r.sequence ? (
+        <Space size={4}>
+          <Tooltip title={<NucleotideSeq seq={r.sequence} />} color="#1a1a1a" overlayInnerStyle={{ padding: '6px 10px' }}>
+            <span style={{ background: '#f5f5f5', borderRadius: 3, padding: '2px 6px', border: '1px solid #e8e8e8', cursor: 'default', display: 'inline-block' }}>
+              <NucleotideSeq seq={r.sequence} maxLen={30} />
+            </span>
+          </Tooltip>
+          <Button
+            size="small"
+            type="text"
+            icon={<CopyOutlined />}
+            style={{ color: '#bbb', padding: '0 2px' }}
+            onClick={() => { navigator.clipboard.writeText(r.sequence!); message.success('Copied') }}
+          />
+        </Space>
+      ) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Target Gene',
+      key: 'target_gene',
+      width: 110,
+      render: (_: unknown, r: Primer) => r.target_gene
+        ? <span style={{ fontWeight: 500 }}>{r.target_gene}</span>
+        : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Target Taxa',
+      key: 'target_taxa',
+      render: (_: unknown, r: Primer) => r.target_taxa
+        ? <Space size={[4, 4]} wrap>{r.target_taxa.split(',').map(t => <Tag key={t.trim()} style={{ fontSize: 11 }}>{t.trim()}</Tag>)}</Space>
+        : <span style={{ color: '#bbb' }}>—</span>,
     },
     {
       title: 'Ta / Size',
       key: 'ta',
       width: 90,
       render: (_: unknown, r: Primer) => (
-        <div style={{ fontSize: 12, lineHeight: '18px' }}>
-          {r.annealing_temp_c != null
-            ? <div style={{ fontWeight: 500 }}>{r.annealing_temp_c}°C</div>
-            : <div style={{ color: '#bbb' }}>—</div>}
-          {r.product_size_bp != null && (
-            <div style={{ color: '#888' }}>~{r.product_size_bp} bp</div>
-          )}
-        </div>
+        <span style={{ fontSize: 12 }}>
+          {r.annealing_temp_c != null ? `${r.annealing_temp_c}°C` : ''}
+          {r.annealing_temp_c != null && r.product_size_bp != null ? ' · ' : ''}
+          {r.product_size_bp != null ? <span style={{ color: '#888' }}>~{r.product_size_bp} bp</span> : ''}
+          {r.annealing_temp_c == null && r.product_size_bp == null ? <span style={{ color: '#bbb' }}>—</span> : ''}
+        </span>
       ),
     },
     {
