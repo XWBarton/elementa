@@ -330,6 +330,7 @@ export default function PrimersPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingPrimer, setEditingPrimer] = useState<Primer | null>(null)
+  const [viewingPrimer, setViewingPrimer] = useState<Primer | null>(null)
   const updatePrimer = useUpdatePrimer(editingPrimer?.id ?? 0)
 
   const handleCreate = async (values: PrimerCreate) => {
@@ -361,7 +362,12 @@ export default function PrimersPage() {
       sorter: (a: Primer, b: Primer) => a.name.localeCompare(b.name),
       render: (_: unknown, r: Primer) => (
         <Space size={6}>
-          <strong style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.name}</strong>
+          <Typography.Link
+            style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600 }}
+            onClick={() => setViewingPrimer(r)}
+          >
+            {r.name}
+          </Typography.Link>
           {r.direction && (
             <Tag color={r.direction === 'F' ? 'blue' : 'volcano'} style={{ margin: 0, fontWeight: 600 }}>
               {r.direction}
@@ -536,6 +542,101 @@ export default function PrimersPage() {
       </Modal>
 
       <BulkAddModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
+
+      <Modal
+        open={!!viewingPrimer}
+        onCancel={() => setViewingPrimer(null)}
+        footer={
+          <Space>
+            <Button onClick={() => { setEditingPrimer(viewingPrimer); setViewingPrimer(null) }}>Edit</Button>
+            <Button type="primary" onClick={() => setViewingPrimer(null)}>Close</Button>
+          </Space>
+        }
+        width={560}
+        title={
+          viewingPrimer && (
+            <Space size={8}>
+              <span style={{ fontFamily: 'monospace', fontSize: 16 }}>{viewingPrimer.name}</span>
+              {viewingPrimer.direction && (
+                <Tag color={viewingPrimer.direction === 'F' ? 'blue' : 'volcano'} style={{ fontWeight: 600 }}>
+                  {viewingPrimer.direction}
+                </Tag>
+              )}
+            </Space>
+          )
+        }
+      >
+        {viewingPrimer && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {viewingPrimer.sequence && (
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Sequence (5′ → 3′)</Typography.Text>
+                <Space size={8} align="center">
+                  <span style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', borderRadius: 4, padding: '4px 10px', display: 'inline-block' }}>
+                    <NucleotideSeq seq={viewingPrimer.sequence} />
+                  </span>
+                  <Button
+                    size="small" type="text" icon={<CopyOutlined />}
+                    onClick={() => { navigator.clipboard.writeText(viewingPrimer.sequence!); message.success('Copied') }}
+                  />
+                </Space>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Target Gene</Typography.Text>
+                <span>{viewingPrimer.target_gene || <Typography.Text type="secondary">—</Typography.Text>}</span>
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Target Taxa</Typography.Text>
+                <span>{viewingPrimer.target_taxa
+                  ? <Space size={4} wrap>{viewingPrimer.target_taxa.split(',').map(t => <Tag key={t.trim()}>{t.trim()}</Tag>)}</Space>
+                  : <Typography.Text type="secondary">—</Typography.Text>}
+                </span>
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Annealing Temp</Typography.Text>
+                <span>{viewingPrimer.annealing_temp_c != null ? `${viewingPrimer.annealing_temp_c}°C` : <Typography.Text type="secondary">—</Typography.Text>}</span>
+              </div>
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Product Size</Typography.Text>
+                <span>{viewingPrimer.product_size_bp != null ? `~${viewingPrimer.product_size_bp} bp` : <Typography.Text type="secondary">—</Typography.Text>}</span>
+              </div>
+            </div>
+            {viewingPrimer.pairs?.length > 0 && (
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Pairs with</Typography.Text>
+                <Space size={[6, 6]} wrap>
+                  {viewingPrimer.pairs.map(p => (
+                    <Tag
+                      key={p.id}
+                      color={p.direction === 'F' ? 'blue' : p.direction === 'R' ? 'volcano' : 'default'}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => { setViewingPrimer(allPrimers?.find(x => x.id === p.id) ?? null) }}
+                    >
+                      {p.name}{p.direction ? ` (${p.direction})` : ''}
+                    </Tag>
+                  ))}
+                </Space>
+              </div>
+            )}
+            {viewingPrimer.reference && (
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Reference</Typography.Text>
+                <span>{viewingPrimer.reference}</span>
+              </div>
+            )}
+            {viewingPrimer.notes && (
+              <div>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Notes</Typography.Text>
+                <Typography.Paragraph style={{ margin: 0, background: '#fafafa', padding: '8px 12px', borderRadius: 4, border: '1px solid #f0f0f0' }}>
+                  {viewingPrimer.notes}
+                </Typography.Paragraph>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
