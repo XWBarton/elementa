@@ -610,7 +610,7 @@ export default function PrimersPage() {
                   size="small"
                   pagination={false}
                   rowKey="id"
-                  dataSource={viewingPrimer.pairs.map(p => allPrimers?.find(x => x.id === p.id) ?? p)}
+                  dataSource={viewingPrimer.pairs.map(p => allPrimers?.find(x => x.id === p.id)).filter((p): p is Primer => !!p)}
                   onRow={(p) => ({ onClick: () => setViewingPrimer(allPrimers?.find(x => x.id === p.id) ?? null), style: { cursor: 'pointer' } })}
                   columns={[
                     {
@@ -630,15 +630,15 @@ export default function PrimersPage() {
                     {
                       title: "Sequence",
                       key: 'sequence',
-                      render: (_: unknown, p: Primer) => (p as Primer).sequence
-                        ? <NucleotideSeq seq={(p as Primer).sequence!} maxLen={22} />
+                      render: (_: unknown, p: Primer) => p.sequence
+                        ? <NucleotideSeq seq={p.sequence} maxLen={22} />
                         : <Typography.Text type="secondary">—</Typography.Text>,
                     },
                     {
                       title: 'Target Gene',
                       key: 'target_gene',
-                      render: (_: unknown, p: Primer) => (p as Primer).target_gene
-                        ? <span style={{ fontSize: 12 }}>{(p as Primer).target_gene}</span>
+                      render: (_: unknown, p: Primer) => p.target_gene
+                        ? <span style={{ fontSize: 12 }}>{p.target_gene}</span>
                         : <Typography.Text type="secondary">—</Typography.Text>,
                     },
                   ]}
