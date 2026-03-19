@@ -18,6 +18,7 @@ class ProjectCreate(BaseModel):
     code: str
     name: str
     description: Optional[str] = None
+    is_protected: bool = False
 
     @field_validator("code")
     @classmethod
@@ -31,6 +32,7 @@ class ProjectCreate(BaseModel):
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    is_protected: Optional[bool] = None
 
 
 class ProjectRead(BaseModel):
@@ -40,6 +42,7 @@ class ProjectRead(BaseModel):
     description: Optional[str] = None
     created_by_id: int
     created_at: datetime
+    is_protected: bool = False
     members: List[ProjectMemberRead] = []
 
     class Config:

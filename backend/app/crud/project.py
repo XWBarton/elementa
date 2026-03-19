@@ -26,6 +26,7 @@ def create_project(db: Session, data: ProjectCreate, user_id: int) -> Project:
         code=data.code,
         name=data.name,
         description=data.description,
+        is_protected=data.is_protected,
         created_by_id=user_id,
     )
     db.add(project)

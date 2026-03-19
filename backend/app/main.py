@@ -49,6 +49,7 @@ def migrate_db():
         ("sanger_runs", "project_id", "ALTER TABLE sanger_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
         ("library_prep_runs", "project_id", "ALTER TABLE library_prep_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
         ("ngs_runs", "project_id", "ALTER TABLE ngs_runs ADD COLUMN project_id INTEGER REFERENCES projects(id)"),
+        ("projects", "is_protected", "ALTER TABLE projects ADD COLUMN is_protected INTEGER NOT NULL DEFAULT 0"),
     ]
     with engine.connect() as conn:
         for table, column, sql in migrations:

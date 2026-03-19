@@ -13,6 +13,7 @@ export interface Project {
   description?: string
   created_by_id: number
   created_at: string
+  is_protected: boolean
   members: ProjectMember[]
 }
 
@@ -20,11 +21,13 @@ export interface ProjectCreate {
   code: string
   name: string
   description?: string
+  is_protected?: boolean
 }
 
 export interface ProjectUpdate {
   name?: string
   description?: string
+  is_protected?: boolean
 }
 
 // ── Protocols ────────────────────────────────────────────────────

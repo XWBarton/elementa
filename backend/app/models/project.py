@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -32,6 +32,7 @@ class Project(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+    is_protected: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     created_by: Mapped["User"] = relationship("User", foreign_keys=[created_by_id])
     members: Mapped[List["User"]] = relationship(

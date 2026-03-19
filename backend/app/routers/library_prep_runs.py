@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.crud import library_prep_run as crud
 from app.dependencies import get_current_user, get_db, require_admin
+from app.models.user import User
 from app.tessera_client import notify_unlink
 from app.schemas.library_prep_run import (
     LibraryPrepCreate,
@@ -19,6 +20,15 @@ from app.schemas.library_prep_run import (
 )
 
 router = APIRouter(prefix="/library-prep-runs", tags=["library-prep-runs"])
+
+
+def _has_access(run, user: User) -> bool:
+    project = run.project if run else None
+    if not project or not project.is_protected:
+        return True
+    if user.is_admin:
+        return True
+    return any(m.id == user.id for m in project.members)
 
 
 def _run_read(obj) -> LibraryPrepRunRead:
@@ -40,10 +50,11 @@ def list_runs(
     project_id: Optional[int] = None,
     operator_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     items, total = crud.get_runs(db, skip=skip, limit=limit, project_id=project_id, operator_id=operator_id)
-    return {"items": [_run_read(i) for i in items], "total": total, "skip": skip, "limit": limit}
+    accessible = [i for i in items if _has_access(i, current_user)]
+    return {"items": [_run_read(i) for i in accessible], "total": len(accessible), "skip": skip, "limit": limit}
 
 
 @router.post("/", response_model=LibraryPrepRunDetail)
@@ -53,23 +64,28 @@ def create_run(data: LibraryPrepRunCreate, db: Session = Depends(get_db), _=Depe
 
 
 @router.get("/all-preps", response_model=list[LibraryPrepRead])
-def all_preps(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    return crud.list_all_preps(db)
+def all_preps(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    preps = crud.list_all_preps(db)
+    return [p for p in preps if _has_access(p.run, current_user)]
 
 
 @router.get("/{run_id}", response_model=LibraryPrepRunDetail)
-def read_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def read_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Library prep run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     return _run_detail(obj)
 
 
 @router.put("/{run_id}", response_model=LibraryPrepRunDetail)
-def update_run(run_id: int, data: LibraryPrepRunUpdate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def update_run(run_id: int, data: LibraryPrepRunUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Library prep run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     obj = crud.update_run(db, obj, data)
     return _run_detail(obj)
 
@@ -87,10 +103,12 @@ def delete_run(run_id: int, db: Session = Depends(get_db), _=Depends(require_adm
 
 
 @router.post("/{run_id}/samples", response_model=LibraryPrepRead)
-def add_sample(run_id: int, data: LibraryPrepCreate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def add_sample(run_id: int, data: LibraryPrepCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Library prep run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     return crud.add_sample(db, run_id, data)
 
 
@@ -100,19 +118,23 @@ def update_sample(
     sample_id: int,
     data: LibraryPrepUpdate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     sample = crud.get_sample(db, sample_id)
     if not sample or sample.run_id != run_id:
         raise HTTPException(status_code=404, detail="Sample not found")
+    if not _has_access(sample.run, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     return crud.update_sample(db, sample, data)
 
 
 @router.delete("/{run_id}/samples/{sample_id}")
-def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     sample = crud.get_sample(db, sample_id)
     if not sample or sample.run_id != run_id:
         raise HTTPException(status_code=404, detail="Sample not found")
+    if not _has_access(sample.run, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     specimen_code = sample.specimen_code
     crud.delete_sample(db, sample)
     notify_unlink(db, specimen_code, str(run_id))
@@ -120,10 +142,12 @@ def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=
 
 
 @router.get("/{run_id}/export")
-def export_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def export_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Library prep run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["run_id", "run_date", "kit", "target_region", "primer_f", "primer_r",

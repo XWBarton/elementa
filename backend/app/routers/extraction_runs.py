@@ -7,6 +7,7 @@ from typing import Optional
 
 from app.crud import extraction_run as crud
 from app.dependencies import get_current_user, get_db, require_admin
+from app.models.user import User
 from app.tessera_client import notify_unlink
 from app.schemas.extraction_run import (
     ExtractionCreate,
@@ -19,6 +20,15 @@ from app.schemas.extraction_run import (
 )
 
 router = APIRouter(prefix="/extraction-runs", tags=["extraction-runs"])
+
+
+def _has_access(run, user: User) -> bool:
+    project = run.project if run else None
+    if not project or not project.is_protected:
+        return True
+    if user.is_admin:
+        return True
+    return any(m.id == user.id for m in project.members)
 
 
 def _run_read(obj) -> ExtractionRunRead:
@@ -40,10 +50,11 @@ def list_runs(
     project_id: Optional[int] = None,
     operator_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     items, total = crud.get_runs(db, skip=skip, limit=limit, project_id=project_id, operator_id=operator_id)
-    return {"items": [_run_read(i) for i in items], "total": total, "skip": skip, "limit": limit}
+    accessible = [i for i in items if _has_access(i, current_user)]
+    return {"items": [_run_read(i) for i in accessible], "total": len(accessible), "skip": skip, "limit": limit}
 
 
 @router.post("/", response_model=ExtractionRunDetail)
@@ -53,7 +64,7 @@ def create_run(data: ExtractionRunCreate, db: Session = Depends(get_db), _=Depen
 
 
 @router.get("/all-extractions")
-def all_extractions(db: Session = Depends(get_db), _=Depends(get_current_user)):
+def all_extractions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     extractions = crud.list_all_extractions(db)
     return [
         {
@@ -68,22 +79,27 @@ def all_extractions(db: Session = Depends(get_db), _=Depends(get_current_user)):
             "storage_location": e.storage_location,
         }
         for e in extractions
+        if _has_access(e.run, current_user)
     ]
 
 
 @router.get("/{run_id}", response_model=ExtractionRunDetail)
-def read_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def read_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Extraction run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     return _run_detail(obj)
 
 
 @router.put("/{run_id}", response_model=ExtractionRunDetail)
-def update_run(run_id: int, data: ExtractionRunUpdate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def update_run(run_id: int, data: ExtractionRunUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Extraction run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     obj = crud.update_run(db, obj, data)
     return _run_detail(obj)
 
@@ -101,10 +117,12 @@ def delete_run(run_id: int, db: Session = Depends(get_db), _=Depends(require_adm
 
 
 @router.post("/{run_id}/samples", response_model=ExtractionRead)
-def add_sample(run_id: int, data: ExtractionCreate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def add_sample(run_id: int, data: ExtractionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Extraction run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     return crud.add_sample(db, run_id, data)
 
 
@@ -113,11 +131,13 @@ def add_samples_bulk(
     run_id: int,
     payload: dict,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Extraction run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     codes = payload.get("specimen_codes", [])
     return crud.add_samples_bulk(db, run_id, codes)
 
@@ -128,19 +148,23 @@ def update_sample(
     sample_id: int,
     data: ExtractionUpdate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     sample = crud.get_sample(db, sample_id)
     if not sample or sample.run_id != run_id:
         raise HTTPException(status_code=404, detail="Sample not found")
+    if not _has_access(sample.run, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     return crud.update_sample(db, sample, data)
 
 
 @router.delete("/{run_id}/samples/{sample_id}")
-def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     sample = crud.get_sample(db, sample_id)
     if not sample or sample.run_id != run_id:
         raise HTTPException(status_code=404, detail="Sample not found")
+    if not _has_access(sample.run, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     specimen_code = sample.specimen_code
     crud.delete_sample(db, sample)
     notify_unlink(db, specimen_code, str(run_id))
@@ -148,10 +172,12 @@ def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), _=
 
 
 @router.get("/{run_id}/export")
-def export_run(run_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def export_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Extraction run not found")
+    if not _has_access(obj, current_user):
+        raise HTTPException(status_code=403, detail="Access restricted")
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["run_id", "run_date", "kit", "extraction_type", "container_type",

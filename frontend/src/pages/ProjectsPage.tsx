@@ -1,7 +1,7 @@
 import {
-  Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
+  Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Tooltip, Typography, message,
 } from 'antd'
-import { PlusOutlined, DeleteOutlined, EditOutlined, TeamOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, EditOutlined, TeamOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import {
   useProjects, useCreateProject, useUpdateProject, useDeleteProject,
@@ -22,7 +22,7 @@ export default function ProjectsPage() {
   const [createForm] = Form.useForm()
   const [editForm] = Form.useForm()
 
-  const handleCreate = async (values: { code: string; name: string; description?: string }) => {
+  const handleCreate = async (values: { code: string; name: string; description?: string; is_protected?: boolean }) => {
     await createProject.mutateAsync(values)
     message.success('Project created')
     createForm.resetFields()
@@ -34,7 +34,16 @@ export default function ProjectsPage() {
       title: 'Code',
       dataIndex: 'code',
       key: 'code',
-      render: (v: string) => <Tag color="blue" style={{ fontFamily: 'monospace' }}>{v}</Tag>,
+      render: (v: string, record: Project) => (
+        <Space size={4}>
+          <Tag color="blue" style={{ fontFamily: 'monospace' }}>{v}</Tag>
+          {record.is_protected && (
+            <Tooltip title="Protected — members only">
+              <LockOutlined style={{ color: '#ff7875' }} />
+            </Tooltip>
+          )}
+        </Space>
+      ),
     },
     {
       title: 'Name',
@@ -119,6 +128,10 @@ export default function ProjectsPage() {
           <Form.Item label="Description" name="description">
             <Input.TextArea rows={2} />
           </Form.Item>
+          <Form.Item label="Protected" name="is_protected" valuePropName="checked" initialValue={false}
+            extra="When protected, only members can view runs in this project">
+            <Switch checkedChildren={<LockOutlined />} unCheckedChildren={<UnlockOutlined />} />
+          </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={createProject.isPending}>Create</Button>
           </Form.Item>
@@ -156,7 +169,7 @@ function EditProjectModal({
 }) {
   const updateProject = useUpdateProject(project.id)
 
-  const handleSave = async (values: { name: string; description?: string }) => {
+  const handleSave = async (values: { name: string; description?: string; is_protected?: boolean }) => {
     await updateProject.mutateAsync(values)
     message.success('Project updated')
     onClose()
@@ -170,6 +183,10 @@ function EditProjectModal({
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea rows={2} />
+        </Form.Item>
+        <Form.Item label="Protected" name="is_protected" valuePropName="checked"
+          extra="When protected, only members can view runs in this project">
+          <Switch checkedChildren={<LockOutlined />} unCheckedChildren={<UnlockOutlined />} />
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={updateProject.isPending}>Save</Button>
@@ -225,6 +242,11 @@ function MembersModal({
         <Space>
           <Tag color="blue" style={{ fontFamily: 'monospace' }}>{project.code}</Tag>
           <span>Members</span>
+          {project.is_protected && (
+            <Tooltip title="Protected project — only members can view its runs">
+              <LockOutlined style={{ color: '#ff7875' }} />
+            </Tooltip>
+          )}
         </Space>
       }
       open
