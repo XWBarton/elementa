@@ -280,7 +280,27 @@ function PrimerForm({
 export default function PrimersPage() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
-  const { data: primers, isLoading } = usePrimers(search || undefined)
+  const [pairFilterId, setPairFilterId] = useState<number | null>(null)
+  const { data: allPrimers, isLoading } = usePrimers()
+
+  const primers = useMemo(() => {
+    let list = allPrimers ?? []
+    if (pairFilterId != null) {
+      const anchor = list.find(p => p.id === pairFilterId)
+      const pairIds = new Set(anchor?.pairs.map(p => p.id) ?? [])
+      pairIds.add(pairFilterId)
+      list = list.filter(p => pairIds.has(p.id))
+    }
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.target_gene?.toLowerCase().includes(q) ||
+        p.target_taxa?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [allPrimers, pairFilterId, search])
   const createPrimer = useCreatePrimer()
   const deletePrimer = useDeletePrimer()
   const [createOpen, setCreateOpen] = useState(false)
@@ -311,55 +331,100 @@ export default function PrimersPage() {
 
   const columns = [
     {
-      title: 'Name',
-      dataIndex: 'name',
+      title: 'Primer',
       key: 'name',
-      render: (v: string) => <strong style={{ fontFamily: 'monospace' }}>{v}</strong>,
       sorter: (a: Primer, b: Primer) => a.name.localeCompare(b.name),
+      render: (_: unknown, r: Primer) => (
+        <div>
+          <Space size={6} style={{ marginBottom: r.sequence ? 4 : 0 }}>
+            <strong style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.name}</strong>
+            {r.direction && (
+              <Tag color={r.direction === 'F' ? 'blue' : 'volcano'} style={{ margin: 0, fontWeight: 600 }}>
+                {r.direction}
+              </Tag>
+            )}
+          </Space>
+          {r.sequence && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <Typography.Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>5′—</Typography.Text>
+              <Tooltip title={r.sequence}>
+                <Typography.Text
+                  code
+                  style={{ fontSize: 11, letterSpacing: 0.5, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}
+                >
+                  {r.sequence}
+                </Typography.Text>
+              </Tooltip>
+              <Typography.Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>—3′</Typography.Text>
+              <Tooltip title="Copy sequence">
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<CopyOutlined />}
+                  style={{ padding: '0 2px', height: 18, color: '#aaa' }}
+                  onClick={() => { navigator.clipboard.writeText(r.sequence!); message.success('Copied') }}
+                />
+              </Tooltip>
+            </div>
+          )}
+        </div>
+      ),
     },
     {
-      title: 'Dir',
-      dataIndex: 'direction',
-      key: 'direction',
-      width: 60,
-      render: (v: string) => v
-        ? <Tag color={v === 'F' ? 'blue' : 'volcano'}>{v}</Tag>
-        : <span style={{ color: '#bbb' }}>—</span>,
+      title: 'Target',
+      key: 'target',
+      render: (_: unknown, r: Primer) => (
+        <div>
+          <div style={{ fontWeight: 500, fontSize: 13 }}>{r.target_gene || <span style={{ color: '#bbb' }}>—</span>}</div>
+          {r.target_taxa && (
+            <div style={{ marginTop: 3 }}>
+              {r.target_taxa.split(',').map(t => (
+                <Tag key={t.trim()} style={{ fontSize: 11, marginBottom: 2 }}>{t.trim()}</Tag>
+              ))}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
-      title: 'Target Gene',
-      dataIndex: 'target_gene',
-      key: 'target_gene',
-      render: (v: string) => v || <span style={{ color: '#bbb' }}>—</span>,
+      title: 'Ta / Size',
+      key: 'ta',
+      width: 90,
+      render: (_: unknown, r: Primer) => (
+        <div style={{ fontSize: 12, lineHeight: '18px' }}>
+          {r.annealing_temp_c != null
+            ? <div style={{ fontWeight: 500 }}>{r.annealing_temp_c}°C</div>
+            : <div style={{ color: '#bbb' }}>—</div>}
+          {r.product_size_bp != null && (
+            <div style={{ color: '#888' }}>~{r.product_size_bp} bp</div>
+          )}
+        </div>
+      ),
     },
     {
-      title: 'Target Taxa',
-      dataIndex: 'target_taxa',
-      key: 'target_taxa',
-      render: (v: string) => v
-        ? v.split(',').map(t => <Tag key={t.trim()}>{t.trim()}</Tag>)
-        : <span style={{ color: '#bbb' }}>—</span>,
-    },
-    {
-      title: 'Ta (°C)',
-      dataIndex: 'annealing_temp_c',
-      key: 'annealing_temp_c',
-      width: 80,
-      render: (v: number) => v != null ? `${v}°C` : <span style={{ color: '#bbb' }}>—</span>,
-    },
-    {
-      title: 'Product',
-      dataIndex: 'product_size_bp',
-      key: 'product_size_bp',
-      width: 100,
-      render: (v: number) => v != null ? `~${v} bp` : <span style={{ color: '#bbb' }}>—</span>,
+      title: 'Pairs with',
+      key: 'pairs',
+      render: (_: unknown, r: Primer) => r.pairs?.length > 0 ? (
+        <Space size={[4, 4]} wrap>
+          {r.pairs.map(p => (
+            <Tag
+              key={p.id}
+              color={p.direction === 'F' ? 'blue' : p.direction === 'R' ? 'volcano' : 'default'}
+              style={{ fontSize: 11, cursor: 'pointer' }}
+              onClick={() => setPairFilterId(p.id)}
+            >
+              {p.name}
+            </Tag>
+          ))}
+        </Space>
+      ) : <span style={{ color: '#bbb', fontSize: 12 }}>—</span>,
     },
     {
       title: '',
       key: 'actions',
-      width: user?.is_admin ? 80 : 40,
+      width: user?.is_admin ? 72 : 36,
       render: (_: unknown, record: Primer) => (
-        <Space>
+        <Space size={4}>
           <Button icon={<EditOutlined />} size="small" onClick={() => setEditingPrimer(record)} />
           {user?.is_admin && (
             <Popconfirm
@@ -380,14 +445,26 @@ export default function PrimersPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
         <Typography.Title level={3} style={{ margin: 0, whiteSpace: 'nowrap' }}>Primer Library</Typography.Title>
         <Input.Search
           placeholder="Search by name, gene or taxa…"
           allowClear
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ maxWidth: 340 }}
+          style={{ maxWidth: 280 }}
+        />
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder="Show pairs for…"
+          style={{ width: 220, borderColor: pairFilterId != null ? '#1677ff' : undefined }}
+          value={pairFilterId}
+          onChange={v => setPairFilterId(v ?? null)}
+          options={(allPrimers ?? [])
+            .filter(p => p.pairs.length > 0)
+            .map(p => ({ label: `${p.name}${p.direction ? ` (${p.direction})` : ''}`, value: p.id }))}
         />
         <Space>
           <Button icon={<UnorderedListOutlined />} onClick={() => setBulkOpen(true)}>
@@ -404,55 +481,11 @@ export default function PrimersPage() {
         columns={columns}
         rowKey="id"
         loading={isLoading}
-        size="small"
-        expandable={{
-          expandedRowRender: (record: Primer) => (
-            <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {record.sequence && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, minWidth: 80 }}>Sequence:</Typography.Text>
-                  <Typography.Text code style={{ fontSize: 13, letterSpacing: 1 }}>{record.sequence}</Typography.Text>
-                  <Tooltip title="Copy sequence">
-                    <Button
-                      size="small"
-                      icon={<CopyOutlined />}
-                      type="text"
-                      onClick={() => { navigator.clipboard.writeText(record.sequence!); message.success('Copied') }}
-                    />
-                  </Tooltip>
-                </div>
-              )}
-              {record.pairs?.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, minWidth: 80 }}>Pairs with:</Typography.Text>
-                  <Space size={4} wrap>
-                    {record.pairs.map(p => (
-                      <Tag key={p.id} color={p.direction === 'F' ? 'blue' : p.direction === 'R' ? 'volcano' : 'default'}>
-                        {p.name}{p.direction ? ` (${p.direction})` : ''}
-                      </Tag>
-                    ))}
-                  </Space>
-                </div>
-              )}
-              {record.reference && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, minWidth: 80 }}>Reference:</Typography.Text>
-                  <Typography.Text style={{ fontSize: 12 }}>{record.reference}</Typography.Text>
-                </div>
-              )}
-              {record.notes && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, minWidth: 80 }}>Notes:</Typography.Text>
-                  <Typography.Text style={{ fontSize: 12 }}>{record.notes}</Typography.Text>
-                </div>
-              )}
-              {!record.sequence && !record.pairs?.length && !record.reference && !record.notes && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>No additional details recorded.</Typography.Text>
-              )}
-            </div>
-          ),
-          rowExpandable: () => true,
-        }}
+        size="middle"
+        pagination={{ pageSize: 25, showSizeChanger: false }}
+        onRow={(record) => ({
+          title: [record.reference && `Ref: ${record.reference}`, record.notes && `Notes: ${record.notes}`].filter(Boolean).join(' | ') || undefined,
+        })}
       />
 
       <Modal
