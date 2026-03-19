@@ -71,10 +71,6 @@ export default function PCRRunFormPage() {
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. 16S rRNA" /></Form.Item>
           <Form.Item label="Forward Primer" name="primer_f"><Input placeholder="Primer F sequence or name" /></Form.Item>
           <Form.Item label="Reverse Primer" name="primer_r"><Input placeholder="Primer R sequence or name" /></Form.Item>
-          <Form.Item label="Annealing Temp (°C)" name="annealing_temp_c">
-            <InputNumber min={0} max={100} step={0.1} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item label="Cycles" name="cycles"><InputNumber min={1} max={60} style={{ width: '100%' }} /></Form.Item>
           <Form.Item label="Polymerase" name="polymerase"><Input placeholder="e.g. Taq, Q5, Phusion" /></Form.Item>
           <Form.Item label="Amplicon Size (bp)" name="amplicon_size_bp">
             <InputNumber min={0} style={{ width: '100%' }} />

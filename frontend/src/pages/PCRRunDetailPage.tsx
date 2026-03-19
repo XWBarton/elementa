@@ -201,8 +201,6 @@ export default function PCRRunDetailPage() {
           <Descriptions.Item label="Target Region">{run.target_region ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Polymerase">{run.polymerase ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Primers">{[run.primer_f, run.primer_r].filter(Boolean).join(' / ') || '—'}</Descriptions.Item>
-          <Descriptions.Item label="Annealing Temp">{run.annealing_temp_c ? `${run.annealing_temp_c}°C` : '—'}</Descriptions.Item>
-          <Descriptions.Item label="Cycles">{run.cycles ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Amplicon Size">{run.amplicon_size_bp ? `${run.amplicon_size_bp} bp` : '—'}</Descriptions.Item>
           <Descriptions.Item label="# Samples"><Tag color="blue">{run.sample_count}</Tag></Descriptions.Item>
           <Descriptions.Item label="Protocol">
