@@ -59,7 +59,7 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
       }
     })
 
-    const requiredFields = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa', 'annealing_temp_c', 'product_size_bp'] as const
+    const requiredFields = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa'] as const
     const missing = requiredFields.filter(f => obj[f] == null || obj[f] === '')
     if (missing.length > 0) {
       errors.push(`Row ${i + 1}: missing required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`)
@@ -128,8 +128,8 @@ function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void })
     >
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required columns: <Typography.Text code>name</Typography.Text>, <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>, <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>.
-          Optional: <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
+          Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required columns: <Typography.Text code>name</Typography.Text>, <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>.
+          Optional: <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>, <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
         </Typography.Text>
 
         <div>
@@ -234,10 +234,10 @@ function PrimerForm({
         </Space.Compact>
 
         <Space.Compact style={{ width: '100%' }}>
-          <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)" rules={[{ required: true }]} style={{ flex: 1, marginRight: 8 }}>
+          <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)" style={{ flex: 1, marginRight: 8 }}>
             <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.5} placeholder="e.g. 55" />
           </Form.Item>
-          <Form.Item name="product_size_bp" label="Product Size (bp)" rules={[{ required: true }]} style={{ flex: 1 }}>
+          <Form.Item name="product_size_bp" label="Product Size (bp)" style={{ flex: 1 }}>
             <InputNumber style={{ width: '100%' }} min={0} step={1} placeholder="e.g. 450" />
           </Form.Item>
         </Space.Compact>
