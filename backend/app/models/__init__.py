@@ -2,7 +2,7 @@ from app.models.user import User
 from app.models.app_setting import AppSetting
 from app.models.project import Project
 from app.models.protocol import Protocol
-from app.models.primer import Primer
+from app.models.primer import Primer, PrimerPair
 from app.models.extraction_run import ExtractionRun, Extraction
 from app.models.pcr_run import PCRRun, PCRSample
 from app.models.sanger_run import SangerRun, SangerSample
@@ -14,7 +14,7 @@ __all__ = [
     "User",
     "Project",
     "Protocol",
-    "Primer",
+    "Primer", "PrimerPair",
     "ExtractionRun", "Extraction",
     "PCRRun", "PCRSample",
     "SangerRun", "SangerSample",

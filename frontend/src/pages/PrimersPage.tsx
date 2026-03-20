@@ -1,21 +1,24 @@
 import { useState, useMemo } from 'react'
 import {
   Typography, Table, Button, Modal, Form, Input, InputNumber,
-  Space, message, Popconfirm, Tag, Select, Tooltip, Alert,
+  Space, message, Popconfirm, Tag, Select, Tooltip, Alert, Tabs,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, UnorderedListOutlined } from '@ant-design/icons'
-import { usePrimers, useCreatePrimer, useUpdatePrimer, useDeletePrimer, useBulkCreatePrimers } from '../hooks/usePrimers'
+import {
+  usePrimers, useCreatePrimer, useUpdatePrimer, useDeletePrimer, useBulkCreatePrimers,
+  usePrimerPairs, useCreatePrimerPair, useUpdatePrimerPair, useDeletePrimerPair,
+} from '../hooks/usePrimers'
 import { useAuth } from '../context/AuthContext'
-import type { Primer, PrimerCreate } from '../types'
+import type { Primer, PrimerCreate, PrimerPairRecord, PrimerPairCreate } from '../types'
 
 const BASE_COLORS: Record<string, string> = {
-  A: '#27ae60',  // green
-  T: '#e74c3c',  // red
-  C: '#2980b9',  // blue
-  G: '#2c3e50',  // near-black
-  U: '#e74c3c',  // RNA uracil = same as T
+  A: '#27ae60',
+  T: '#e74c3c',
+  C: '#2980b9',
+  G: '#2c3e50',
+  U: '#e74c3c',
 }
-const DEGENERATE_COLOR = '#8e44ad' // purple for IUPAC ambiguity codes
+const DEGENERATE_COLOR = '#8e44ad'
 
 function NucleotideSeq({ seq, maxLen }: { seq: string; maxLen?: number }) {
   const display = maxLen && seq.length > maxLen ? seq.slice(0, maxLen) : seq
@@ -37,9 +40,9 @@ const DIRECTION_OPTIONS = [
   { value: 'R', label: 'R — Reverse' },
 ]
 
-const BULK_TEMPLATE = `name\tdirection\tsequence\ttarget_gene\ttarget_taxa\tannealing_temp_c\tproduct_size_bp\treference\tnotes
-16S-F\tF\tAGAGTTTGATCMTGGCTCAG\t16S rRNA\tBacteria\t55\t1500\tLane 1991\t
-16S-R\tR\tGGTTACCTTGTTACGACTT\t16S rRNA\tBacteria\t55\t1500\tLane 1991\t`
+const BULK_TEMPLATE = `name\tdirection\tsequence\ttarget_gene\ttarget_taxa\tannealing_temp_c\treference\tnotes
+16S-F\tF\tAGAGTTTGATCMTGGCTCAG\t16S rRNA\tBacteria\t55\tLane 1991\t
+16S-R\tR\tGGTTACCTTGTTACGACTT\t16S rRNA\tBacteria\t55\tLane 1991\t`
 
 const COLUMN_HEADERS: Record<string, keyof PrimerCreate> = {
   name: 'name',
@@ -48,7 +51,6 @@ const COLUMN_HEADERS: Record<string, keyof PrimerCreate> = {
   target_gene: 'target_gene',
   target_taxa: 'target_taxa',
   annealing_temp_c: 'annealing_temp_c',
-  product_size_bp: 'product_size_bp',
   reference: 'reference',
   notes: 'notes',
 }
@@ -75,9 +77,6 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
       if (!val) return
       if (field === 'annealing_temp_c') {
         const n = parseFloat(val)
-        obj[field] = isNaN(n) ? undefined : n
-      } else if (field === 'product_size_bp') {
-        const n = parseInt(val, 10)
         obj[field] = isNaN(n) ? undefined : n
       } else {
         obj[field] = val
@@ -161,7 +160,7 @@ function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void })
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           Paste tab-separated (TSV) or comma-separated (CSV) data with a header row. Required columns: <Typography.Text code>name</Typography.Text>, <Typography.Text code>direction</Typography.Text>, <Typography.Text code>sequence</Typography.Text>, <Typography.Text code>target_gene</Typography.Text>, <Typography.Text code>target_taxa</Typography.Text>.
-          Optional: <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>product_size_bp</Typography.Text>, <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
+          Optional: <Typography.Text code>annealing_temp_c</Typography.Text>, <Typography.Text code>reference</Typography.Text>, <Typography.Text code>notes</Typography.Text>.
         </Typography.Text>
 
         <div>
@@ -219,26 +218,15 @@ function PrimerForm({
   onFinish,
   loading,
   initialValues,
-  currentId,
 }: {
   onFinish: (v: PrimerCreate) => void
   loading: boolean
   initialValues?: Partial<Primer>
-  currentId?: number
 }) {
-  const { data: allPrimers } = usePrimers()
   const [form] = Form.useForm()
 
-  const pairOptions = (allPrimers ?? [])
-    .filter(p => p.id !== currentId)
-    .map(p => ({ label: `${p.name}${p.direction ? ` (${p.direction})` : ''}`, value: p.id }))
-
-  const formInitialValues = initialValues
-    ? { ...initialValues, pair_ids: initialValues.pairs?.map(p => p.id) ?? [] }
-    : undefined
-
   return (
-    <Form form={form} layout="vertical" onFinish={onFinish} initialValues={formInitialValues}>
+    <Form form={form} layout="vertical" onFinish={onFinish} initialValues={initialValues}>
       <Space style={{ width: '100%' }} direction="vertical" size={0}>
         <Space.Compact style={{ width: '100%' }}>
           <Form.Item name="name" label="Primer Name" rules={[{ required: true }]} style={{ flex: 1, marginRight: 8 }}>
@@ -265,28 +253,12 @@ function PrimerForm({
           </Form.Item>
         </Space.Compact>
 
-        <Space.Compact style={{ width: '100%' }}>
-          <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)" style={{ flex: 1, marginRight: 8 }}>
-            <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.5} placeholder="e.g. 55" />
-          </Form.Item>
-          <Form.Item name="product_size_bp" label="Product Size (bp)" style={{ flex: 1 }}>
-            <InputNumber style={{ width: '100%' }} min={0} step={1} placeholder="e.g. 450" />
-          </Form.Item>
-        </Space.Compact>
+        <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)">
+          <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.5} placeholder="e.g. 55" />
+        </Form.Item>
 
         <Form.Item name="reference" label="Reference / Source">
           <Input placeholder="e.g. Lane 1991, DOI, or kit name" />
-        </Form.Item>
-
-        <Form.Item name="pair_ids" label="Pairs with">
-          <Select
-            mode="multiple"
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            placeholder="Select compatible primers…"
-            options={pairOptions}
-          />
         </Form.Item>
 
         <Form.Item name="notes" label="Notes">
@@ -301,20 +273,113 @@ function PrimerForm({
   )
 }
 
-export default function PrimersPage() {
+function PrimerPairForm({
+  onFinish,
+  loading,
+  initialValues,
+}: {
+  onFinish: (v: PrimerPairCreate) => void
+  loading: boolean
+  initialValues?: Partial<PrimerPairRecord>
+}) {
+  const { data: allPrimers } = usePrimers()
+  const [form] = Form.useForm()
+
+  const fOptions = (allPrimers ?? [])
+    .filter(p => p.direction === 'F' || !p.direction)
+    .map(p => ({ label: `${p.name}${p.direction ? ` (${p.direction})` : ''}${p.target_gene ? ` — ${p.target_gene}` : ''}`, value: p.id }))
+  const rOptions = (allPrimers ?? [])
+    .filter(p => p.direction === 'R' || !p.direction)
+    .map(p => ({ label: `${p.name}${p.direction ? ` (${p.direction})` : ''}${p.target_gene ? ` — ${p.target_gene}` : ''}`, value: p.id }))
+
+  const formInitialValues = initialValues ? {
+    name: initialValues.name,
+    forward_primer_id: initialValues.forward_primer_id,
+    reverse_primer_id: initialValues.reverse_primer_id,
+    amplicon_size_bp: initialValues.amplicon_size_bp,
+    annealing_temp_c: initialValues.annealing_temp_c,
+    target_gene: initialValues.target_gene,
+    target_taxa: initialValues.target_taxa,
+    notes: initialValues.notes,
+    reference: initialValues.reference,
+  } : undefined
+
+  return (
+    <Form form={form} layout="vertical" onFinish={onFinish} initialValues={formInitialValues}>
+      <Space style={{ width: '100%' }} direction="vertical" size={0}>
+        <Form.Item name="name" label="Pair Name (optional)">
+          <Input placeholder="e.g. 515F/806R, V3-V4" />
+        </Form.Item>
+
+        <Space.Compact style={{ width: '100%' }}>
+          <Form.Item name="forward_primer_id" label="Forward Primer" style={{ flex: 1, marginRight: 8 }}>
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select forward primer…"
+              options={fOptions}
+            />
+          </Form.Item>
+          <Form.Item name="reverse_primer_id" label="Reverse Primer" style={{ flex: 1 }}>
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select reverse primer…"
+              options={rOptions}
+            />
+          </Form.Item>
+        </Space.Compact>
+
+        <Space.Compact style={{ width: '100%' }}>
+          <Form.Item name="amplicon_size_bp" label="Amplicon Size (bp)" style={{ flex: 1, marginRight: 8 }}>
+            <InputNumber style={{ width: '100%' }} min={0} step={1} placeholder="e.g. 291" />
+          </Form.Item>
+          <Form.Item name="annealing_temp_c" label="Annealing Temp (°C)" style={{ flex: 1 }}>
+            <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.5} placeholder="e.g. 55" />
+          </Form.Item>
+        </Space.Compact>
+
+        <Space.Compact style={{ width: '100%' }}>
+          <Form.Item name="target_gene" label="Target Gene / Region" style={{ flex: 1, marginRight: 8 }}>
+            <Input placeholder="e.g. 16S rRNA V4" />
+          </Form.Item>
+          <Form.Item name="target_taxa" label="Target Taxa" style={{ flex: 1 }}>
+            <Input placeholder="e.g. Bacteria" />
+          </Form.Item>
+        </Space.Compact>
+
+        <Form.Item name="reference" label="Reference / Source">
+          <Input placeholder="e.g. Caporaso 2011" />
+        </Form.Item>
+
+        <Form.Item name="notes" label="Notes">
+          <Input.TextArea rows={2} />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading}>Save</Button>
+        </Form.Item>
+      </Space>
+    </Form>
+  )
+}
+
+function PrimersTab() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
-  const [pairFilterId, setPairFilterId] = useState<number | null>(null)
   const { data: allPrimers, isLoading } = usePrimers()
+  const createPrimer = useCreatePrimer()
+  const deletePrimer = useDeletePrimer()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [editingPrimer, setEditingPrimer] = useState<Primer | null>(null)
+  const [viewingPrimer, setViewingPrimer] = useState<Primer | null>(null)
+  const updatePrimer = useUpdatePrimer(editingPrimer?.id ?? 0)
 
   const primers = useMemo(() => {
     let list = allPrimers ?? []
-    if (pairFilterId != null) {
-      const anchor = list.find(p => p.id === pairFilterId)
-      const pairIds = new Set(anchor?.pairs.map(p => p.id) ?? [])
-      pairIds.add(pairFilterId)
-      list = list.filter(p => pairIds.has(p.id))
-    }
     if (search) {
       const q = search.toLowerCase()
       list = list.filter(p =>
@@ -324,14 +389,7 @@ export default function PrimersPage() {
       )
     }
     return list
-  }, [allPrimers, pairFilterId, search])
-  const createPrimer = useCreatePrimer()
-  const deletePrimer = useDeletePrimer()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [bulkOpen, setBulkOpen] = useState(false)
-  const [editingPrimer, setEditingPrimer] = useState<Primer | null>(null)
-  const [viewingPrimer, setViewingPrimer] = useState<Primer | null>(null)
-  const updatePrimer = useUpdatePrimer(editingPrimer?.id ?? 0)
+  }, [allPrimers, search])
 
   const handleCreate = async (values: PrimerCreate) => {
     try {
@@ -412,35 +470,12 @@ export default function PrimersPage() {
         : <span style={{ color: '#bbb' }}>—</span>,
     },
     {
-      title: 'Ta / Size',
+      title: 'Ta (°C)',
       key: 'ta',
-      width: 90,
-      render: (_: unknown, r: Primer) => (
-        <span style={{ fontSize: 12 }}>
-          {r.annealing_temp_c != null ? `${r.annealing_temp_c}°C` : ''}
-          {r.annealing_temp_c != null && r.product_size_bp != null ? ' · ' : ''}
-          {r.product_size_bp != null ? <span style={{ color: '#888' }}>~{r.product_size_bp} bp</span> : ''}
-          {r.annealing_temp_c == null && r.product_size_bp == null ? <span style={{ color: '#bbb' }}>—</span> : ''}
-        </span>
-      ),
-    },
-    {
-      title: 'Pairs with',
-      key: 'pairs',
-      render: (_: unknown, r: Primer) => r.pairs?.length > 0 ? (
-        <Space size={[4, 4]} wrap>
-          {r.pairs.map(p => (
-            <Tag
-              key={p.id}
-              color={p.direction === 'F' ? 'blue' : p.direction === 'R' ? 'volcano' : 'default'}
-              style={{ fontSize: 11, cursor: 'pointer' }}
-              onClick={() => setPairFilterId(p.id)}
-            >
-              {p.name}
-            </Tag>
-          ))}
-        </Space>
-      ) : <span style={{ color: '#bbb', fontSize: 12 }}>—</span>,
+      width: 80,
+      render: (_: unknown, r: Primer) => r.annealing_temp_c != null
+        ? <span style={{ fontSize: 12 }}>{r.annealing_temp_c}°C</span>
+        : <span style={{ color: '#bbb' }}>—</span>,
     },
     {
       title: '',
@@ -467,27 +502,14 @@ export default function PrimersPage() {
   ]
 
   return (
-    <div>
+    <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
-        <Typography.Title level={3} style={{ margin: 0, whiteSpace: 'nowrap' }}>Primer Library</Typography.Title>
         <Input.Search
           placeholder="Search by name, gene or taxa…"
           allowClear
           value={search}
           onChange={e => setSearch(e.target.value)}
           style={{ maxWidth: 280 }}
-        />
-        <Select
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          placeholder="Show pairs for…"
-          style={{ width: 220, borderColor: pairFilterId != null ? '#1677ff' : undefined }}
-          value={pairFilterId}
-          onChange={v => setPairFilterId(v ?? null)}
-          options={(allPrimers ?? [])
-            .filter(p => p.pairs.length > 0)
-            .map(p => ({ label: `${p.name}${p.direction ? ` (${p.direction})` : ''}`, value: p.id }))}
         />
         <Space>
           <Button icon={<UnorderedListOutlined />} onClick={() => setBulkOpen(true)}>
@@ -511,32 +533,17 @@ export default function PrimersPage() {
         })}
       />
 
-      <Modal
-        title="Add Primer"
-        open={createOpen}
-        onCancel={() => setCreateOpen(false)}
-        footer={null}
-        width={560}
-        destroyOnClose
-      >
+      <Modal title="Add Primer" open={createOpen} onCancel={() => setCreateOpen(false)} footer={null} width={520} destroyOnClose>
         <PrimerForm onFinish={handleCreate} loading={createPrimer.isPending} />
       </Modal>
 
-      <Modal
-        title={`Edit — ${editingPrimer?.name}`}
-        open={!!editingPrimer}
-        onCancel={() => setEditingPrimer(null)}
-        footer={null}
-        width={560}
-        destroyOnClose
-      >
+      <Modal title={`Edit — ${editingPrimer?.name}`} open={!!editingPrimer} onCancel={() => setEditingPrimer(null)} footer={null} width={520} destroyOnClose>
         {editingPrimer && (
           <PrimerForm
             key={editingPrimer.id}
             onFinish={handleEdit}
             loading={updatePrimer.isPending}
             initialValues={editingPrimer}
-            currentId={editingPrimer.id}
           />
         )}
       </Modal>
@@ -552,7 +559,7 @@ export default function PrimersPage() {
             <Button type="primary" onClick={() => setViewingPrimer(null)}>Close</Button>
           </Space>
         }
-        width={560}
+        width={520}
         title={
           viewingPrimer && (
             <Space size={8}>
@@ -598,53 +605,7 @@ export default function PrimersPage() {
                 <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Annealing Temp</Typography.Text>
                 <span>{viewingPrimer.annealing_temp_c != null ? `${viewingPrimer.annealing_temp_c}°C` : <Typography.Text type="secondary">—</Typography.Text>}</span>
               </div>
-              <div>
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Product Size</Typography.Text>
-                <span>{viewingPrimer.product_size_bp != null ? `~${viewingPrimer.product_size_bp} bp` : <Typography.Text type="secondary">—</Typography.Text>}</span>
-              </div>
             </div>
-            {viewingPrimer.pairs?.length > 0 && (
-              <div>
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Pairs with</Typography.Text>
-                <Table
-                  size="small"
-                  pagination={false}
-                  rowKey="id"
-                  dataSource={viewingPrimer.pairs.map(p => allPrimers?.find(x => x.id === p.id)).filter((p): p is Primer => !!p)}
-                  onRow={(p) => ({ onClick: () => setViewingPrimer(allPrimers?.find(x => x.id === p.id) ?? null), style: { cursor: 'pointer' } })}
-                  columns={[
-                    {
-                      title: 'Name',
-                      key: 'name',
-                      render: (_: unknown, p: Primer) => (
-                        <Space size={6}>
-                          <Typography.Link style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>
-                            {p.name}
-                          </Typography.Link>
-                          {p.direction && (
-                            <Tag color={p.direction === 'F' ? 'blue' : 'volcano'} style={{ margin: 0 }}>{p.direction}</Tag>
-                          )}
-                        </Space>
-                      ),
-                    },
-                    {
-                      title: "Sequence",
-                      key: 'sequence',
-                      render: (_: unknown, p: Primer) => p.sequence
-                        ? <NucleotideSeq seq={p.sequence} maxLen={22} />
-                        : <Typography.Text type="secondary">—</Typography.Text>,
-                    },
-                    {
-                      title: 'Target Gene',
-                      key: 'target_gene',
-                      render: (_: unknown, p: Primer) => p.target_gene
-                        ? <span style={{ fontSize: 12 }}>{p.target_gene}</span>
-                        : <Typography.Text type="secondary">—</Typography.Text>,
-                    },
-                  ]}
-                />
-              </div>
-            )}
             {viewingPrimer.reference && (
               <div>
                 <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>Reference</Typography.Text>
@@ -662,6 +623,165 @@ export default function PrimersPage() {
           </div>
         )}
       </Modal>
+    </>
+  )
+}
+
+function PrimerPairsTab() {
+  const { user } = useAuth()
+  const { data: pairs, isLoading } = usePrimerPairs()
+  const createPair = useCreatePrimerPair()
+  const deletePair = useDeletePrimerPair()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingPair, setEditingPair] = useState<PrimerPairRecord | null>(null)
+  const updatePair = useUpdatePrimerPair(editingPair?.id ?? 0)
+
+  const handleCreate = async (values: PrimerPairCreate) => {
+    try {
+      await createPair.mutateAsync(values)
+      message.success('Primer pair added')
+      setCreateOpen(false)
+    } catch {
+      message.error('Failed to add primer pair')
+    }
+  }
+
+  const handleEdit = async (values: PrimerPairCreate) => {
+    try {
+      await updatePair.mutateAsync(values)
+      message.success('Primer pair updated')
+      setEditingPair(null)
+    } catch {
+      message.error('Failed to update primer pair')
+    }
+  }
+
+  const columns = [
+    {
+      title: 'Pair Name',
+      key: 'name',
+      width: 160,
+      render: (_: unknown, r: PrimerPairRecord) => r.name
+        ? <strong style={{ fontFamily: 'monospace' }}>{r.name}</strong>
+        : <span style={{ color: '#bbb', fontSize: 12 }}>unnamed</span>,
+    },
+    {
+      title: 'Forward Primer',
+      key: 'forward',
+      render: (_: unknown, r: PrimerPairRecord) => r.forward_primer ? (
+        <Space size={6}>
+          <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 600, margin: 0 }}>{r.forward_primer.name}</Tag>
+          {r.forward_primer.sequence && <NucleotideSeq seq={r.forward_primer.sequence} maxLen={18} />}
+        </Space>
+      ) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Reverse Primer',
+      key: 'reverse',
+      render: (_: unknown, r: PrimerPairRecord) => r.reverse_primer ? (
+        <Space size={6}>
+          <Tag color="volcano" style={{ fontFamily: 'monospace', fontWeight: 600, margin: 0 }}>{r.reverse_primer.name}</Tag>
+          {r.reverse_primer.sequence && <NucleotideSeq seq={r.reverse_primer.sequence} maxLen={18} />}
+        </Space>
+      ) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Amplicon',
+      key: 'amplicon',
+      width: 90,
+      render: (_: unknown, r: PrimerPairRecord) => r.amplicon_size_bp != null
+        ? <span style={{ fontSize: 12 }}>~{r.amplicon_size_bp} bp</span>
+        : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Ta (°C)',
+      key: 'ta',
+      width: 75,
+      render: (_: unknown, r: PrimerPairRecord) => r.annealing_temp_c != null
+        ? <span style={{ fontSize: 12 }}>{r.annealing_temp_c}°C</span>
+        : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Target Gene',
+      key: 'target_gene',
+      width: 110,
+      render: (_: unknown, r: PrimerPairRecord) => r.target_gene
+        ? <span style={{ fontWeight: 500 }}>{r.target_gene}</span>
+        : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: user?.is_admin ? 72 : 36,
+      render: (_: unknown, record: PrimerPairRecord) => (
+        <Space size={4}>
+          <Button icon={<EditOutlined />} size="small" onClick={() => setEditingPair(record)} />
+          {user?.is_admin && (
+            <Popconfirm
+              title="Delete this primer pair?"
+              onConfirm={() =>
+                deletePair.mutateAsync(record.id)
+                  .then(() => message.success('Deleted'))
+                  .catch(() => message.error('Failed to delete'))
+              }
+            >
+              <Button icon={<DeleteOutlined />} size="small" danger />
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ]
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+          Add Primer Pair
+        </Button>
+      </div>
+
+      <Table
+        dataSource={pairs ?? []}
+        columns={columns}
+        rowKey="id"
+        loading={isLoading}
+        size="middle"
+        pagination={{ pageSize: 25, showSizeChanger: false }}
+        onRow={(record) => ({
+          title: [record.reference && `Ref: ${record.reference}`, record.notes && `Notes: ${record.notes}`].filter(Boolean).join(' | ') || undefined,
+        })}
+      />
+
+      <Modal title="Add Primer Pair" open={createOpen} onCancel={() => setCreateOpen(false)} footer={null} width={560} destroyOnClose>
+        <PrimerPairForm onFinish={handleCreate} loading={createPair.isPending} />
+      </Modal>
+
+      <Modal title={`Edit — ${editingPair?.name ?? 'Primer Pair'}`} open={!!editingPair} onCancel={() => setEditingPair(null)} footer={null} width={560} destroyOnClose>
+        {editingPair && (
+          <PrimerPairForm
+            key={editingPair.id}
+            onFinish={handleEdit}
+            loading={updatePair.isPending}
+            initialValues={editingPair}
+          />
+        )}
+      </Modal>
+    </>
+  )
+}
+
+export default function PrimersPage() {
+  return (
+    <div>
+      <Typography.Title level={3} style={{ margin: '0 0 16px' }}>Primer Library</Typography.Title>
+      <Tabs
+        defaultActiveKey="primers"
+        items={[
+          { key: 'primers', label: 'Primers', children: <PrimersTab /> },
+          { key: 'pairs', label: 'Primer Pairs', children: <PrimerPairsTab /> },
+        ]}
+      />
     </div>
   )
 }

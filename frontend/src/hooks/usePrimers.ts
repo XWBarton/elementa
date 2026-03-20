@@ -1,14 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getPrimers, createPrimer, updatePrimer, deletePrimer, bulkCreatePrimers } from '../api/primers'
-import type { PrimerCreate, PrimerUpdate } from '../types'
+import {
+  getPrimers, createPrimer, updatePrimer, deletePrimer, bulkCreatePrimers,
+  getPrimerPairs, createPrimerPair, updatePrimerPair, deletePrimerPair,
+} from '../api/primers'
+import type { PrimerCreate, PrimerUpdate, PrimerPairCreate, PrimerPairUpdate } from '../types'
 
-export const useBulkCreatePrimers = () => {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: PrimerCreate[]) => bulkCreatePrimers(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['primers'] }),
-  })
-}
+// ── Primers ───────────────────────────────────────────────────────
 
 export const usePrimers = (q?: string) =>
   useQuery({ queryKey: ['primers', q], queryFn: () => getPrimers(q) })
@@ -34,5 +31,42 @@ export const useDeletePrimer = () => {
   return useMutation({
     mutationFn: (id: number) => deletePrimer(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['primers'] }),
+  })
+}
+
+export const useBulkCreatePrimers = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: PrimerCreate[]) => bulkCreatePrimers(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['primers'] }),
+  })
+}
+
+// ── Primer Pairs ──────────────────────────────────────────────────
+
+export const usePrimerPairs = (q?: string) =>
+  useQuery({ queryKey: ['primer-pairs', q], queryFn: () => getPrimerPairs(q) })
+
+export const useCreatePrimerPair = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: PrimerPairCreate) => createPrimerPair(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['primer-pairs'] }),
+  })
+}
+
+export const useUpdatePrimerPair = (id: number) => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: PrimerPairUpdate) => updatePrimerPair(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['primer-pairs'] }),
+  })
+}
+
+export const useDeletePrimerPair = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => deletePrimerPair(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['primer-pairs'] }),
   })
 }

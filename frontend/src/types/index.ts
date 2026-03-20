@@ -434,12 +434,6 @@ export interface NGSRunUpdate extends Partial<NGSRunCreate> {}
 
 // ── Primers ──────────────────────────────────────────────────────
 
-export interface PrimerPair {
-  id: number
-  name: string
-  direction?: string
-}
-
 export interface Primer {
   id: number
   name: string
@@ -448,10 +442,8 @@ export interface Primer {
   target_taxa?: string
   target_gene?: string
   annealing_temp_c?: number
-  product_size_bp?: number
   reference?: string
   notes?: string
-  pairs: PrimerPair[]
   created_at: string
 }
 
@@ -462,13 +454,50 @@ export interface PrimerCreate {
   target_taxa?: string
   target_gene?: string
   annealing_temp_c?: number
-  product_size_bp?: number
   reference?: string
   notes?: string
-  pair_ids?: number[]
 }
 
 export interface PrimerUpdate extends Partial<PrimerCreate> {}
+
+// ── Primer Pairs ──────────────────────────────────────────────────
+
+export interface PrimerInPair {
+  id: number
+  name: string
+  sequence?: string
+  direction?: string
+}
+
+export interface PrimerPairRecord {
+  id: number
+  name?: string
+  forward_primer_id?: number
+  reverse_primer_id?: number
+  forward_primer?: PrimerInPair
+  reverse_primer?: PrimerInPair
+  amplicon_size_bp?: number
+  annealing_temp_c?: number
+  target_gene?: string
+  target_taxa?: string
+  notes?: string
+  reference?: string
+  created_at: string
+}
+
+export interface PrimerPairCreate {
+  name?: string
+  forward_primer_id?: number
+  reverse_primer_id?: number
+  amplicon_size_bp?: number
+  annealing_temp_c?: number
+  target_gene?: string
+  target_taxa?: string
+  notes?: string
+  reference?: string
+}
+
+export interface PrimerPairUpdate extends Partial<PrimerPairCreate> {}
 
 // ── Shared ───────────────────────────────────────────────────────
 

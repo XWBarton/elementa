@@ -1,12 +1,12 @@
 import { AutoComplete, Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography, message } from 'antd'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { useCreatePCRRun, usePCRRun, useUpdatePCRRun } from '../hooks/usePCRRuns'
 import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
-import { usePrimers } from '../hooks/usePrimers'
+import { usePrimers, usePrimerPairs } from '../hooks/usePrimers'
 import { PCRRunCreate } from '../types'
 
 export default function PCRRunFormPage() {
@@ -14,15 +14,25 @@ export default function PCRRunFormPage() {
   const isEdit = !!id
   const navigate = useNavigate()
   const [form] = Form.useForm()
+  const [selectedPairId, setSelectedPairId] = useState<number | null>(null)
 
   const { data: run } = usePCRRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
   const { data: protocols } = useAllProtocols()
   const { data: primers } = usePrimers()
+  const { data: primerPairs } = usePrimerPairs()
 
   const fPrimerOptions = (primers ?? []).filter(p => p.direction === 'F').map(p => ({ label: `${p.name} — ${p.target_gene ?? ''}`, value: p.name }))
   const rPrimerOptions = (primers ?? []).filter(p => p.direction === 'R').map(p => ({ label: `${p.name} — ${p.target_gene ?? ''}`, value: p.name }))
+
+  const pairOptions = (primerPairs ?? []).map(p => ({
+    label: p.name
+      ? `${p.name}${p.amplicon_size_bp ? ` (~${p.amplicon_size_bp} bp)` : ''}`
+      : [p.forward_primer?.name, p.reverse_primer?.name].filter(Boolean).join(' / ') + (p.amplicon_size_bp ? ` (~${p.amplicon_size_bp} bp)` : ''),
+    value: p.id,
+  }))
+
   const createRun = useCreatePCRRun()
   const updateRun = useUpdatePCRRun()
 
@@ -31,6 +41,20 @@ export default function PCRRunFormPage() {
       form.setFieldsValue({ ...run, run_date: run.run_date ? dayjs(run.run_date) : null })
     }
   }, [run, isEdit, form])
+
+  const handlePairSelect = (pairId: number | null) => {
+    setSelectedPairId(pairId)
+    if (pairId == null) return
+    const pair = (primerPairs ?? []).find(p => p.id === pairId)
+    if (!pair) return
+    form.setFieldsValue({
+      primer_f: pair.forward_primer?.name ?? form.getFieldValue('primer_f'),
+      primer_r: pair.reverse_primer?.name ?? form.getFieldValue('primer_r'),
+      ...(pair.amplicon_size_bp != null ? { amplicon_size_bp: pair.amplicon_size_bp } : {}),
+      ...(pair.annealing_temp_c != null ? { annealing_temp_c: pair.annealing_temp_c } : {}),
+      ...(pair.target_gene ? { target_region: pair.target_gene } : {}),
+    })
+  }
 
   const onFinish = async (values: PCRRunCreate & { run_date: dayjs.Dayjs }) => {
     const payload: PCRRunCreate = { ...values, run_date: values.run_date ? values.run_date.format('YYYY-MM-DD') : undefined }
@@ -74,6 +98,20 @@ export default function PCRRunFormPage() {
             />
           </Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. 16S rRNA" /></Form.Item>
+
+          {/* Primer pair picker — auto-fills primer fields below */}
+          <Form.Item label="Primer Pair (optional — auto-fills primers and amplicon size)">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select a known primer pair…"
+              options={pairOptions}
+              value={selectedPairId}
+              onChange={v => handlePairSelect(v ?? null)}
+            />
+          </Form.Item>
+
           <Form.Item label="Forward Primer" name="primer_f">
             <AutoComplete
               allowClear
