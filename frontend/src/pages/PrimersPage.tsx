@@ -3,7 +3,7 @@ import {
   Typography, Table, Button, Modal, Form, Input, InputNumber,
   Space, message, Popconfirm, Tag, Select, Tooltip, Alert, Tabs,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, UnorderedListOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, UnorderedListOutlined, DownloadOutlined } from '@ant-design/icons'
 import {
   usePrimers, useCreatePrimer, useUpdatePrimer, useDeletePrimer, useBulkCreatePrimers,
   usePrimerPairs, useCreatePrimerPair, useUpdatePrimerPair, useDeletePrimerPair,
@@ -101,6 +101,17 @@ function parseBulkText(text: string): { rows: PrimerCreate[]; errors: string[] }
   }
 
   return { rows, errors }
+}
+
+function downloadCsv(filename: string, rows: string[][]): void {
+  const csv = rows.map(r => r.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function BulkAddModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -512,6 +523,16 @@ function PrimersTab() {
           style={{ maxWidth: 280 }}
         />
         <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              const header = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa', 'annealing_temp_c', 'reference', 'notes']
+              const rows = primers.map(p => [p.name, p.direction ?? '', p.sequence ?? '', p.target_gene ?? '', p.target_taxa ?? '', p.annealing_temp_c ?? '', p.reference ?? '', p.notes ?? ''])
+              downloadCsv('primers.csv', [header, ...rows])
+            }}
+          >
+            Export CSV
+          </Button>
           <Button icon={<UnorderedListOutlined />} onClick={() => setBulkOpen(true)}>
             Bulk Add
           </Button>
@@ -629,12 +650,30 @@ function PrimersTab() {
 
 function PrimerPairsTab() {
   const { user } = useAuth()
-  const { data: pairs, isLoading } = usePrimerPairs()
+  const [search, setSearch] = useState('')
+  const { data: allPairs, isLoading } = usePrimerPairs()
   const createPair = useCreatePrimerPair()
   const deletePair = useDeletePrimerPair()
   const [createOpen, setCreateOpen] = useState(false)
   const [editingPair, setEditingPair] = useState<PrimerPairRecord | null>(null)
   const updatePair = useUpdatePrimerPair(editingPair?.id ?? 0)
+
+  const pairs = useMemo(() => {
+    let list = allPairs ?? []
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter(p =>
+        p.name?.toLowerCase().includes(q) ||
+        p.target_gene?.toLowerCase().includes(q) ||
+        p.target_taxa?.toLowerCase().includes(q) ||
+        p.forward_primer?.name.toLowerCase().includes(q) ||
+        p.reverse_primer?.name.toLowerCase().includes(q) ||
+        p.reference?.toLowerCase().includes(q) ||
+        p.notes?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [allPairs, search])
 
   const handleCreate = async (values: PrimerPairCreate) => {
     try {
@@ -735,14 +774,43 @@ function PrimerPairsTab() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-          Add Primer Pair
-        </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+        <Input.Search
+          placeholder="Search name, gene, taxa, primer, reference…"
+          allowClear
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ maxWidth: 320 }}
+        />
+        <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              const header = ['name', 'forward_primer', 'reverse_primer', 'amplicon_size_bp', 'annealing_temp_c', 'target_gene', 'target_taxa', 'reference', 'notes']
+              const rows = pairs.map(p => [
+                p.name ?? '',
+                p.forward_primer?.name ?? '',
+                p.reverse_primer?.name ?? '',
+                p.amplicon_size_bp ?? '',
+                p.annealing_temp_c ?? '',
+                p.target_gene ?? '',
+                p.target_taxa ?? '',
+                p.reference ?? '',
+                p.notes ?? '',
+              ])
+              downloadCsv('primer_pairs.csv', [header, ...rows])
+            }}
+          >
+            Export CSV
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            Add Primer Pair
+          </Button>
+        </Space>
       </div>
 
       <Table
-        dataSource={pairs ?? []}
+        dataSource={pairs}
         columns={columns}
         rowKey="id"
         loading={isLoading}
