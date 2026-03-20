@@ -527,7 +527,7 @@ function PrimersTab() {
             icon={<DownloadOutlined />}
             onClick={() => {
               const header = ['name', 'direction', 'sequence', 'target_gene', 'target_taxa', 'annealing_temp_c', 'reference', 'notes']
-              const rows = primers.map(p => [p.name, p.direction ?? '', p.sequence ?? '', p.target_gene ?? '', p.target_taxa ?? '', p.annealing_temp_c ?? '', p.reference ?? '', p.notes ?? ''])
+              const rows = primers.map(p => [p.name, p.direction ?? '', p.sequence ?? '', p.target_gene ?? '', p.target_taxa ?? '', p.annealing_temp_c != null ? String(p.annealing_temp_c) : '', p.reference ?? '', p.notes ?? ''])
               downloadCsv('primers.csv', [header, ...rows])
             }}
           >
@@ -791,8 +791,8 @@ function PrimerPairsTab() {
                 p.name ?? '',
                 p.forward_primer?.name ?? '',
                 p.reverse_primer?.name ?? '',
-                p.amplicon_size_bp ?? '',
-                p.annealing_temp_c ?? '',
+                p.amplicon_size_bp != null ? String(p.amplicon_size_bp) : '',
+                p.annealing_temp_c != null ? String(p.annealing_temp_c) : '',
                 p.target_gene ?? '',
                 p.target_taxa ?? '',
                 p.reference ?? '',
