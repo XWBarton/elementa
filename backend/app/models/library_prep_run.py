@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.models.pcr_run import PCRSample
     from app.models.protocol import Protocol
     from app.models.project import Project
+    from app.models.primer import PrimerPair
 
 
 class LibraryPrepRun(Base):
@@ -29,6 +30,7 @@ class LibraryPrepRun(Base):
     primer_f: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     primer_r: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    primer_pair_id: Mapped[Optional[int]] = mapped_column(ForeignKey("primer_pair_records.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -37,6 +39,7 @@ class LibraryPrepRun(Base):
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
+    primer_pair: Mapped[Optional["PrimerPair"]] = relationship("PrimerPair", foreign_keys=[primer_pair_id])
     samples: Mapped[list["LibraryPrep"]] = relationship(
         "LibraryPrep", back_populates="run", cascade="all, delete-orphan"
     )

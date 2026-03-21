@@ -51,3 +51,8 @@ export async function getAllLibraryPreps(): Promise<LibraryPrep[]> {
   const { data } = await client.get('/library-prep-runs/all-preps')
   return data
 }
+
+export async function bulkAddLibraryPreps(runId: number, specimenCodes: string[]): Promise<LibraryPrep[]> {
+  const { data } = await client.post(`/library-prep-runs/${runId}/samples/bulk`, { specimen_codes: specimenCodes })
+  return data
+}

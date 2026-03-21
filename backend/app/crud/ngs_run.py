@@ -79,3 +79,48 @@ def update_ngs_run(db: Session, obj: NGSRun, data: NGSRunUpdate) -> NGSRun:
 def delete_ngs_run(db: Session, obj: NGSRun) -> None:
     db.delete(obj)
     db.commit()
+
+
+def add_library(db: Session, run_id: int, data) -> NGSRunLibrary:
+    lib = NGSRunLibrary(ngs_run_id=run_id, **data.model_dump())
+    db.add(lib)
+    db.commit()
+    db.refresh(lib)
+    return db.query(NGSRunLibrary).options(
+        joinedload(NGSRunLibrary.library_prep)
+    ).filter(NGSRunLibrary.id == lib.id).first()
+
+
+def update_library(db: Session, lib: NGSRunLibrary, data) -> NGSRunLibrary:
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(lib, key, value)
+    db.commit()
+    return db.query(NGSRunLibrary).options(
+        joinedload(NGSRunLibrary.library_prep)
+    ).filter(NGSRunLibrary.id == lib.id).first()
+
+
+def delete_library(db: Session, lib: NGSRunLibrary) -> None:
+    db.delete(lib)
+    db.commit()
+
+
+def get_library(db: Session, lib_id: int) -> Optional[NGSRunLibrary]:
+    return db.query(NGSRunLibrary).options(
+        joinedload(NGSRunLibrary.ngs_run),
+        joinedload(NGSRunLibrary.library_prep)
+    ).filter(NGSRunLibrary.id == lib_id).first()
+
+
+def add_libraries_bulk(db: Session, run_id: int, specimen_codes: list[str]) -> list[NGSRunLibrary]:
+    libs = []
+    for code in specimen_codes:
+        lib = NGSRunLibrary(ngs_run_id=run_id, specimen_code=code)
+        db.add(lib)
+        db.flush()
+        libs.append(lib.id)
+    db.commit()
+    return [
+        db.query(NGSRunLibrary).options(joinedload(NGSRunLibrary.library_prep)).filter(NGSRunLibrary.id == lid).first()
+        for lid in libs
+    ]

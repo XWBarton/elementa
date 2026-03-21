@@ -190,17 +190,17 @@ export default function ExportPage() {
                     <Text strong>Download Backup</Text>
                   </Space>
                   <Paragraph type="secondary" style={{ margin: 0, fontSize: 13 }}>
-                    Downloads the entire database as a <code>.db</code> file. Useful for off-site
-                    backups or migrating to a new server.
+                    Downloads the database and all run attachments as a <code>.zip</code> archive.
+                    Useful for off-site backups or migrating to a new server.
                   </Paragraph>
-                  <Text type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>elementa_backup_YYYY-MM-DD_HHMM.db</Text>
+                  <Text type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>elementa_backup_YYYY-MM-DD_HHMM.zip</Text>
                   <Button
                     icon={<DownloadOutlined />}
                     loading={backupLoading}
                     onClick={handleBackup}
                     style={{ marginTop: 4 }}
                   >
-                    Download Backup (.db)
+                    Download Backup (.zip)
                   </Button>
                 </Space>
               </Card>
@@ -217,7 +217,7 @@ export default function ExportPage() {
                     This cannot be undone.
                   </Paragraph>
                   <Upload
-                    accept=".db"
+                    accept=".db,.zip"
                     maxCount={1}
                     beforeUpload={(file) => { setRestoreFile(file); return false }}
                     onRemove={() => setRestoreFile(null)}

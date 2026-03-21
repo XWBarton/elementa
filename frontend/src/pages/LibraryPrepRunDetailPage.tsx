@@ -1,11 +1,12 @@
 import {
   Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import {
   useAddLibraryPrep,
+  useBulkAddLibraryPreps,
   useDeleteLibraryPrep,
   useDeleteLibraryPrepRun,
   useLibraryPrepRun,
@@ -33,10 +34,13 @@ export default function LibraryPrepRunDetailPage() {
   const addPrep = useAddLibraryPrep(runId)
   const updatePrep = useUpdateLibraryPrep(runId)
   const deletePrep = useDeleteLibraryPrep(runId)
+  const bulkAdd = useBulkAddLibraryPreps(runId)
   const deleteRun = useDeleteLibraryPrepRun()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editSample, setEditSample] = useState<LibraryPrep | null>(null)
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
   const [addForm] = Form.useForm()
   const [editForm] = Form.useForm()
 
@@ -63,6 +67,15 @@ export default function LibraryPrepRunDetailPage() {
       value: s.id,
     }
   }) ?? []
+
+  const handleBulkPaste = async () => {
+    const codes = bulkText.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+    if (!codes.length) { message.error('No codes entered'); return }
+    await bulkAdd.mutateAsync(codes)
+    message.success(`${codes.length} library preps added`)
+    setBulkText('')
+    setBulkModalOpen(false)
+  }
 
   const handleAddPrep = async (values: LibraryPrepCreate) => {
     await addPrep.mutateAsync(values)
@@ -260,7 +273,12 @@ export default function LibraryPrepRunDetailPage() {
           {run.notes && <Descriptions.Item label="Notes" span={2}>{run.notes}</Descriptions.Item>}
         </Descriptions>
       </Card>
-      <Card title="Library Preps" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Library</Button>}>
+      <Card title="Library Preps" extra={
+        <Space>
+          <Button icon={<UnorderedListOutlined />} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Library</Button>
+        </Space>
+      }>
         <Table dataSource={run.samples ?? []} columns={columns} rowKey="id" size="small" pagination={{ pageSize: 20 }} />
       </Card>
 
@@ -269,6 +287,25 @@ export default function LibraryPrepRunDetailPage() {
       </Modal>
       <Modal title="Edit Library Prep" open={!!editSample} onCancel={() => setEditSample(null)} footer={null}>
         <PrepForm form={editForm} loading={updatePrep.isPending} onFinish={handleEditSave} />
+      </Modal>
+
+      <Modal
+        title="Bulk Add Library Preps"
+        open={bulkModalOpen}
+        onCancel={() => { setBulkModalOpen(false); setBulkText('') }}
+        onOk={handleBulkPaste}
+        okText="Add Library Preps"
+        confirmLoading={bulkAdd.isPending}
+      >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+          Paste specimen codes (one per line or comma-separated). Each code will be linked to the most recent extraction for that specimen.
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={10}
+          value={bulkText}
+          onChange={e => setBulkText(e.target.value)}
+          placeholder="AMPH2024-001&#10;AMPH2024-002&#10;AMPH2024-003"
+        />
       </Modal>
 
       <RunAttachmentsPanel runType="library_prep" runId={run.id} />

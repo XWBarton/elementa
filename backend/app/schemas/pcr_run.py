@@ -7,6 +7,11 @@ from app.schemas.user import UserRead
 from app.schemas.extraction_run import ExtractionRead
 from app.schemas.protocol import ProtocolRead
 from app.schemas.project import ProjectRead
+from app.schemas.primer import PrimerPairRead
+
+
+class BulkSpecimenCodePayload(BaseModel):
+    specimen_codes: list[str]
 
 
 class PCRSampleCreate(BaseModel):
@@ -48,6 +53,7 @@ class PCRRunCreate(BaseModel):
     project_id: int
     protocol_id: Optional[int] = None
     target_region: Optional[str] = None
+    primer_pair_id: Optional[int] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     annealing_temp_c: Optional[float] = None
@@ -63,6 +69,7 @@ class PCRRunUpdate(BaseModel):
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
     target_region: Optional[str] = None
+    primer_pair_id: Optional[int] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     annealing_temp_c: Optional[float] = None
@@ -82,6 +89,8 @@ class PCRRunRead(BaseModel):
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
     target_region: Optional[str] = None
+    primer_pair_id: Optional[int] = None
+    primer_pair: Optional[PrimerPairRead] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     annealing_temp_c: Optional[float] = None

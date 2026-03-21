@@ -1,6 +1,6 @@
 import { AutoComplete, Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography, message } from 'antd'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useCreatePCRRun, usePCRRun, useUpdatePCRRun } from '../hooks/usePCRRuns'
 import { useUsers } from '../hooks/useUsers'
@@ -14,7 +14,6 @@ export default function PCRRunFormPage() {
   const isEdit = !!id
   const navigate = useNavigate()
   const [form] = Form.useForm()
-  const [selectedPairId, setSelectedPairId] = useState<number | null>(null)
 
   const { data: run } = usePCRRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
@@ -43,7 +42,6 @@ export default function PCRRunFormPage() {
   }, [run, isEdit, form])
 
   const handlePairSelect = (pairId: number | null) => {
-    setSelectedPairId(pairId)
     if (pairId == null) return
     const pair = (primerPairs ?? []).find(p => p.id === pairId)
     if (!pair) return
@@ -99,15 +97,14 @@ export default function PCRRunFormPage() {
           </Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. 16S rRNA" /></Form.Item>
 
-          {/* Primer pair picker — auto-fills primer fields below */}
-          <Form.Item label="Primer Pair (optional — auto-fills primers and amplicon size)">
+          {/* Primer pair picker — auto-fills primer fields below and saves FK to run */}
+          <Form.Item label="Primer Pair (optional — auto-fills primers and amplicon size)" name="primer_pair_id">
             <Select
               allowClear
               showSearch
               optionFilterProp="label"
               placeholder="Select a known primer pair…"
               options={pairOptions}
-              value={selectedPairId}
               onChange={v => handlePairSelect(v ?? null)}
             />
           </Form.Item>

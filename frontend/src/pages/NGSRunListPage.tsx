@@ -47,6 +47,7 @@ export default function NGSRunListPage() {
       key: 'actions',
       render: (_: unknown, row: NGSRun) => (
         <Space>
+          <Button size="small" type="primary" onClick={() => navigate(`/ngs-runs/${row.id}`)}>View</Button>
           <Button size="small" onClick={() => navigate(`/ngs-runs/${row.id}/edit`)}>Edit</Button>
           {user?.is_admin && (
             <Popconfirm

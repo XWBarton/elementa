@@ -129,9 +129,16 @@ export default function NGSRunFormPage() {
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="output_path" label="Output Path">
-                <Input />
+            <Col span={12}>
+              <Form.Item name="storage_host" label="Storage Host" extra="Hostname or server where raw data lives (e.g. nas.lab.local, sequencer-pc, HPC-cluster)">
+                <Input placeholder="e.g. nas.lab.local" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item name="output_path" label="Output Path" extra="Full path on the storage host (e.g. /data/ngs/2024-03-21_run01)">
+                <Input placeholder="e.g. /mnt/ngs-storage/runs/RUN-001" />
               </Form.Item>
             </Col>
           </Row>

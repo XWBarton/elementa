@@ -9,7 +9,9 @@ from app.crud import extraction_run as crud
 from app.dependencies import get_current_user, get_db, require_admin
 from app.models.user import User
 from app.tessera_client import notify_unlink
+from app.utils.access import has_run_access as _has_access
 from app.schemas.extraction_run import (
+    BulkSpecimenCodePayload,
     ExtractionCreate,
     ExtractionRead,
     ExtractionRunCreate,
@@ -20,15 +22,6 @@ from app.schemas.extraction_run import (
 )
 
 router = APIRouter(prefix="/extraction-runs", tags=["extraction-runs"])
-
-
-def _has_access(run, user: User) -> bool:
-    project = run.project if run else None
-    if not project or not project.is_protected:
-        return True
-    if user.is_admin:
-        return True
-    return any(m.id == user.id for m in project.members)
 
 
 def _run_read(obj) -> ExtractionRunRead:
@@ -129,7 +122,7 @@ def add_sample(run_id: int, data: ExtractionCreate, db: Session = Depends(get_db
 @router.post("/{run_id}/samples/bulk", response_model=list[ExtractionRead])
 def add_samples_bulk(
     run_id: int,
-    payload: dict,
+    payload: BulkSpecimenCodePayload,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -138,8 +131,7 @@ def add_samples_bulk(
         raise HTTPException(status_code=404, detail="Extraction run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
-    codes = payload.get("specimen_codes", [])
-    return crud.add_samples_bulk(db, run_id, codes)
+    return crud.add_samples_bulk(db, run_id, payload.specimen_codes)
 
 
 @router.put("/{run_id}/samples/{sample_id}", response_model=ExtractionRead)

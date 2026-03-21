@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   addSangerSample,
+  bulkAddSangerSamples,
   createSangerRun,
   deleteSangerRun,
   deleteSangerSample,
@@ -64,6 +65,14 @@ export function useDeleteSangerSample(runId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (sampleId: number) => deleteSangerSample(runId, sampleId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sanger_runs', runId] }),
+  })
+}
+
+export function useBulkAddSangerSamples(runId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (codes: string[]) => bulkAddSangerSamples(runId, codes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sanger_runs', runId] }),
   })
 }

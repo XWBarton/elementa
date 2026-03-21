@@ -1,10 +1,10 @@
 import {
   Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { useAddPCRSample, useDeletePCRRun, useDeletePCRSample, usePCRRun, useUpdatePCRSample } from '../hooks/usePCRRuns'
+import { useAddPCRSample, useBulkAddPCRSamples, useDeletePCRRun, useDeletePCRSample, usePCRRun, useUpdatePCRSample } from '../hooks/usePCRRuns'
 import { useAllExtractions } from '../hooks/useExtractionRuns'
 import { Extraction, PCRSample, PCRSampleCreate, PCRSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -32,10 +32,13 @@ export default function PCRRunDetailPage() {
   const addSample = useAddPCRSample(runId)
   const updateSample = useUpdatePCRSample(runId)
   const deleteSample = useDeletePCRSample(runId)
+  const bulkAdd = useBulkAddPCRSamples(runId)
   const deleteRun = useDeletePCRRun()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editSample, setEditSample] = useState<PCRSample | null>(null)
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
   const [addForm] = Form.useForm()
   const [editForm] = Form.useForm()
 
@@ -51,6 +54,15 @@ export default function PCRRunDetailPage() {
   }) ?? []
 
   const gelColor: Record<string, string> = { pass: 'green', fail: 'red', weak: 'orange', multiple_bands: 'purple' }
+
+  const handleBulkPaste = async () => {
+    const codes = bulkText.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+    if (!codes.length) { message.error('No codes entered'); return }
+    await bulkAdd.mutateAsync(codes)
+    message.success(`${codes.length} samples added`)
+    setBulkText('')
+    setBulkModalOpen(false)
+  }
 
   const handleAddSample = async (values: PCRSampleCreate) => {
     await addSample.mutateAsync(values)
@@ -211,7 +223,12 @@ export default function PCRRunDetailPage() {
           {run.notes && <Descriptions.Item label="Notes" span={2}>{run.notes}</Descriptions.Item>}
         </Descriptions>
       </Card>
-      <Card title="Samples" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Sample</Button>}>
+      <Card title="Samples" extra={
+        <Space>
+          <Button icon={<UnorderedListOutlined />} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Sample</Button>
+        </Space>
+      }>
         <Table dataSource={run.samples ?? []} columns={columns} rowKey="id" size="small" pagination={{ pageSize: 20 }} />
       </Card>
 
@@ -278,6 +295,25 @@ export default function PCRRunDetailPage() {
             <Button type="primary" htmlType="submit" loading={updateSample.isPending}>Save</Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Bulk Add Samples"
+        open={bulkModalOpen}
+        onCancel={() => { setBulkModalOpen(false); setBulkText('') }}
+        onOk={handleBulkPaste}
+        okText="Add Samples"
+        confirmLoading={bulkAdd.isPending}
+      >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+          Paste specimen codes (one per line or comma-separated). Each code will be linked to the most recent extraction for that specimen.
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={10}
+          value={bulkText}
+          onChange={e => setBulkText(e.target.value)}
+          placeholder="AMPH2024-001&#10;AMPH2024-002&#10;AMPH2024-003"
+        />
       </Modal>
 
       <RunAttachmentsPanel runType="pcr" runId={run.id} />

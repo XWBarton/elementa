@@ -17,6 +17,18 @@ class NGSRunLibraryCreate(BaseModel):
     reads_millions: Optional[float] = None
 
 
+class NGSRunLibraryUpdate(BaseModel):
+    library_prep_id: Optional[int] = None
+    specimen_code: Optional[str] = None
+    sample_name: Optional[str] = None
+    qc_status: Optional[str] = None
+    reads_millions: Optional[float] = None
+
+
+class BulkSpecimenCodePayload(BaseModel):
+    specimen_codes: list[str]
+
+
 class NGSRunLibraryRead(BaseModel):
     id: int
     ngs_run_id: int
@@ -41,6 +53,7 @@ class NGSRunCreate(BaseModel):
     protocol_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
+    storage_host: Optional[str] = None
     output_path: Optional[str] = None
     total_reads: Optional[int] = None
     q30_percent: Optional[float] = None
@@ -59,6 +72,7 @@ class NGSRunUpdate(BaseModel):
     project_id: Optional[int] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
+    storage_host: Optional[str] = None
     output_path: Optional[str] = None
     total_reads: Optional[int] = None
     q30_percent: Optional[float] = None
@@ -81,6 +95,7 @@ class NGSRunRead(BaseModel):
     project: Optional[ProjectRead] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
+    storage_host: Optional[str] = None
     output_path: Optional[str] = None
     total_reads: Optional[int] = None
     q30_percent: Optional[float] = None

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   addPCRSample,
+  bulkAddPCRSamples,
   createPCRRun,
   deletePCRRun,
   deletePCRSample,
@@ -69,6 +70,14 @@ export function useDeletePCRSample(runId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (sampleId: number) => deletePCRSample(runId, sampleId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pcr_runs', runId] }),
+  })
+}
+
+export function useBulkAddPCRSamples(runId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (codes: string[]) => bulkAddPCRSamples(runId, codes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pcr_runs', runId] }),
   })
 }

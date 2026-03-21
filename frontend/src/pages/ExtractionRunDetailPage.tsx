@@ -81,6 +81,8 @@ export default function ExtractionRunDetailPage() {
     const code = values.specimen_code
     if (code && !['NTC', 'EXB'].includes(code) && tesseraUrl) {
       const params = new URLSearchParams({ code, elementa_ref: String(runId), run_type: 'extraction' })
+      if (values.input_quantity != null) params.set('input_quantity', String(values.input_quantity))
+      if (values.input_quantity_unit) params.set('input_quantity_unit', values.input_quantity_unit)
       notification.info({
         message: `Log usage of ${code} in Tessera`,
         description: 'Record how much tissue was taken from this specimen for this extraction.',
@@ -197,6 +199,8 @@ export default function ExtractionRunDetailPage() {
                 icon={<LinkOutlined />}
                 onClick={() => {
                   const params = new URLSearchParams({ code: record.specimen_code, elementa_ref: String(runId), run_type: 'extraction' })
+                  if (record.input_quantity != null) params.set('input_quantity', String(record.input_quantity))
+                  if (record.input_quantity_unit) params.set('input_quantity_unit', record.input_quantity_unit)
                   window.open(`${tesseraUrl}/specimens/find?${params}`, '_blank')
                 }}
               />

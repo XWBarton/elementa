@@ -14,6 +14,7 @@ import {
   RetweetOutlined,
   QuestionCircleOutlined,
   FolderOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import React, { useEffect, useRef, useState } from 'react'
@@ -34,6 +35,7 @@ const workflowItems = [
 const referenceItems = [
   { key: '/protocols', icon: <FileTextOutlined />, label: 'Protocols' },
   { key: '/primers', icon: <RetweetOutlined />, label: 'Primers' },
+  { key: '/specimen-history', icon: <HistoryOutlined />, label: 'Specimen History' },
 ]
 
 const manageItems = [

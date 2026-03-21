@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.pcr_run import PCRSample
     from app.models.protocol import Protocol
     from app.models.project import Project
+    from app.models.primer import Primer
 
 
 class SangerRun(Base):
@@ -28,6 +29,7 @@ class SangerRun(Base):
     service_provider: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     order_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    primer_id: Mapped[Optional[int]] = mapped_column(ForeignKey("primers.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -36,6 +38,7 @@ class SangerRun(Base):
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
+    primer_record: Mapped[Optional["Primer"]] = relationship("Primer", foreign_keys=[primer_id])
     samples: Mapped[list["SangerSample"]] = relationship(
         "SangerSample", back_populates="run", cascade="all, delete-orphan"
     )

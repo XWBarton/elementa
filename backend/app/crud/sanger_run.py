@@ -65,7 +65,6 @@ def add_sample(db: Session, run_id: int, data: SangerSampleCreate) -> SangerSamp
     sample = SangerSample(run_id=run_id, **data.model_dump())
     db.add(sample)
     db.commit()
-    db.refresh(sample)
     return (
         db.query(SangerSample)
         .options(joinedload(SangerSample.pcr_sample).joinedload(PCRSample.extraction))
@@ -78,7 +77,6 @@ def update_sample(db: Session, sample: SangerSample, data: SangerSampleUpdate) -
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(sample, key, value)
     db.commit()
-    db.refresh(sample)
     return (
         db.query(SangerSample)
         .options(joinedload(SangerSample.pcr_sample).joinedload(PCRSample.extraction))
@@ -93,4 +91,18 @@ def delete_sample(db: Session, sample: SangerSample) -> None:
 
 
 def get_sample(db: Session, sample_id: int) -> Optional[SangerSample]:
-    return db.query(SangerSample).filter(SangerSample.id == sample_id).first()
+    return db.query(SangerSample).options(joinedload(SangerSample.run)).filter(SangerSample.id == sample_id).first()
+
+
+def add_samples_bulk(db: Session, run_id: int, specimen_codes: list[str]) -> list[SangerSample]:
+    samples = []
+    for code in specimen_codes:
+        s = SangerSample(run_id=run_id, specimen_code=code)
+        db.add(s)
+        db.flush()
+        samples.append(s.id)
+    db.commit()
+    return [
+        db.query(SangerSample).options(joinedload(SangerSample.pcr_sample)).filter(SangerSample.id == sid).first()
+        for sid in samples
+    ]

@@ -51,3 +51,8 @@ export async function getAllPCRSamples(): Promise<PCRSample[]> {
   const { data } = await client.get('/pcr-runs/all-samples')
   return data
 }
+
+export async function bulkAddPCRSamples(runId: number, specimenCodes: string[]): Promise<PCRSample[]> {
+  const { data } = await client.post(`/pcr-runs/${runId}/samples/bulk`, { specimen_codes: specimenCodes })
+  return data
+}

@@ -1,11 +1,22 @@
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.schemas.user import UserRead
 from app.schemas.protocol import ProtocolRead
 from app.schemas.project import ProjectRead
+
+
+class BulkSpecimenCodePayload(BaseModel):
+    specimen_codes: List[str]
+
+    @field_validator("specimen_codes")
+    @classmethod
+    def codes_not_empty(cls, v: List[str]) -> List[str]:
+        if not isinstance(v, list):
+            raise ValueError("specimen_codes must be a list")
+        return [c for c in v if c and c.strip()]
 
 
 class ExtractionCreate(BaseModel):

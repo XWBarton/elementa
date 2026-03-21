@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.extraction_run import Extraction
     from app.models.protocol import Protocol
     from app.models.project import Project
+    from app.models.primer import PrimerPair
 
 
 class PCRRun(Base):
@@ -31,6 +32,7 @@ class PCRRun(Base):
     polymerase: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     amplicon_size_bp: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    primer_pair_id: Mapped[Optional[int]] = mapped_column(ForeignKey("primer_pair_records.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -39,6 +41,7 @@ class PCRRun(Base):
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
+    primer_pair: Mapped[Optional["PrimerPair"]] = relationship("PrimerPair", foreign_keys=[primer_pair_id])
     samples: Mapped[list["PCRSample"]] = relationship(
         "PCRSample", back_populates="run", cascade="all, delete-orphan"
     )

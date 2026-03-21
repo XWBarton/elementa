@@ -32,6 +32,9 @@ import LibraryPrepRunDetailPage from './pages/LibraryPrepRunDetailPage'
 // NGS Runs
 import NGSRunListPage from './pages/NGSRunListPage'
 import NGSRunFormPage from './pages/NGSRunFormPage'
+import NGSRunDetailPage from './pages/NGSRunDetailPage'
+
+import SpecimenHistoryPage from './pages/SpecimenHistoryPage'
 
 // Protocols
 import ProtocolListPage from './pages/ProtocolListPage'
@@ -81,7 +84,11 @@ export default function App() {
             {/* NGS Runs */}
             <Route path="/ngs-runs" element={<NGSRunListPage />} />
             <Route path="/ngs-runs/new" element={<NGSRunFormPage />} />
+            <Route path="/ngs-runs/:id" element={<NGSRunDetailPage />} />
             <Route path="/ngs-runs/:id/edit" element={<NGSRunFormPage />} />
+
+            {/* Specimen History */}
+            <Route path="/specimen-history" element={<SpecimenHistoryPage />} />
 
             {/* Protocols */}
             <Route path="/protocols" element={<ProtocolListPage />} />

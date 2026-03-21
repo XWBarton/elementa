@@ -91,7 +91,25 @@ def delete_sample(db: Session, sample: LibraryPrep) -> None:
 
 
 def get_sample(db: Session, sample_id: int) -> Optional[LibraryPrep]:
-    return _sample_query(db).filter(LibraryPrep.id == sample_id).first()
+    return db.query(LibraryPrep).options(
+        joinedload(LibraryPrep.run),
+        joinedload(LibraryPrep.extraction),
+        joinedload(LibraryPrep.pcr_sample).joinedload(PCRSample.extraction),
+    ).filter(LibraryPrep.id == sample_id).first()
+
+
+def add_samples_bulk(db: Session, run_id: int, specimen_codes: list[str]) -> list[LibraryPrep]:
+    samples = []
+    for code in specimen_codes:
+        s = LibraryPrep(run_id=run_id, specimen_code=code)
+        db.add(s)
+        db.flush()
+        samples.append(s.id)
+    db.commit()
+    return [
+        db.query(LibraryPrep).options(joinedload(LibraryPrep.extraction)).filter(LibraryPrep.id == sid).first()
+        for sid in samples
+    ]
 
 
 def list_all_preps(db: Session) -> List[LibraryPrep]:

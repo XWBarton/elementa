@@ -64,7 +64,6 @@ def add_sample(db: Session, run_id: int, data: PCRSampleCreate) -> PCRSample:
     sample = PCRSample(run_id=run_id, **data.model_dump())
     db.add(sample)
     db.commit()
-    db.refresh(sample)
     return db.query(PCRSample).options(joinedload(PCRSample.extraction)).filter(PCRSample.id == sample.id).first()
 
 
@@ -72,7 +71,6 @@ def update_sample(db: Session, sample: PCRSample, data: PCRSampleUpdate) -> PCRS
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(sample, key, value)
     db.commit()
-    db.refresh(sample)
     return db.query(PCRSample).options(joinedload(PCRSample.extraction)).filter(PCRSample.id == sample.id).first()
 
 
@@ -82,7 +80,21 @@ def delete_sample(db: Session, sample: PCRSample) -> None:
 
 
 def get_sample(db: Session, sample_id: int) -> Optional[PCRSample]:
-    return db.query(PCRSample).filter(PCRSample.id == sample_id).first()
+    return db.query(PCRSample).options(joinedload(PCRSample.run)).filter(PCRSample.id == sample_id).first()
+
+
+def add_samples_bulk(db: Session, run_id: int, specimen_codes: list[str]) -> list[PCRSample]:
+    samples = []
+    for code in specimen_codes:
+        s = PCRSample(run_id=run_id, specimen_code=code)
+        db.add(s)
+        db.flush()
+        samples.append(s.id)
+    db.commit()
+    return [
+        db.query(PCRSample).options(joinedload(PCRSample.extraction)).filter(PCRSample.id == sid).first()
+        for sid in samples
+    ]
 
 
 def list_all_pcr_samples(db: Session) -> List[PCRSample]:

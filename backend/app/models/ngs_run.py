@@ -26,7 +26,8 @@ class NGSRun(Base):
     project_id: Mapped[Optional[int]] = mapped_column(ForeignKey("projects.id"), nullable=True)
     flow_cell_id: Mapped[Optional[str]] = mapped_column(String(200))
     reagent_kit: Mapped[Optional[str]] = mapped_column(String(200))
-    output_path: Mapped[Optional[str]] = mapped_column(String(500))
+    storage_host: Mapped[Optional[str]] = mapped_column(String(300))  # hostname / NAS / HPC where raw data lives
+    output_path: Mapped[Optional[str]] = mapped_column(String(1000))  # path on that host
     total_reads: Mapped[Optional[int]] = mapped_column(Integer)
     q30_percent: Mapped[Optional[float]] = mapped_column(Float)
     mean_read_length_bp: Mapped[Optional[int]] = mapped_column(Integer)

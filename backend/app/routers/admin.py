@@ -1,14 +1,20 @@
 import json
+import logging
+import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
 
 from fastapi import APIRouter, Depends, HTTPException
+
+log = logging.getLogger(__name__)
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db, require_admin
 from app.models.app_setting import AppSetting
+from app.models.user import User
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -23,6 +29,8 @@ class TesseraLinkPayload(BaseModel):
     specimen_code: str
     elementa_ref: str
     run_type: str
+    input_quantity: float | None = None
+    input_quantity_unit: str | None = None
 
 
 def _get_settings_map(db: Session) -> dict[str, str]:
@@ -33,7 +41,6 @@ def _server_url(url: str) -> str:
     """Use TESSERA_INTERNAL_URL env var if set (for tunnelled/cloud deployments where
     the public URL isn't reachable from inside Docker), otherwise rewrite
     localhost → host.docker.internal so requests escape the container."""
-    import os, re
     internal = os.environ.get("TESSERA_INTERNAL_URL", "").strip()
     if internal:
         return internal.rstrip("/")
@@ -94,8 +101,7 @@ def test_tessera(url: str = "", token: str = "", db: Session = Depends(get_db), 
     except urllib.error.HTTPError as e:
         raise HTTPException(status_code=502, detail="Tessera rejected the request — check the API token")
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error("Tessera connection failed: %s", e)
+        log.error("Tessera connection failed: %s", e)
         raise HTTPException(status_code=502, detail="Could not reach Tessera")
 
 
@@ -123,8 +129,7 @@ def search_tessera(q: str = "", db: Session = Depends(get_db), _=Depends(get_cur
     except HTTPException:
         raise
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error("Tessera search failed: %s", e)
+        log.error("Tessera search failed: %s", e)
         raise HTTPException(status_code=502, detail="Could not reach Tessera")
 
 
@@ -139,6 +144,8 @@ def link_tessera_specimen(payload: TesseraLinkPayload, db: Session = Depends(get
         "specimen_code": payload.specimen_code,
         "elementa_ref": payload.elementa_ref,
         "run_type": payload.run_type,
+        "input_quantity": payload.input_quantity,
+        "input_quantity_unit": payload.input_quantity_unit,
     }).encode()
     req = urllib.request.Request(
         f"{_server_url(url)}/api/specimens/link-elementa",
@@ -154,6 +161,103 @@ def link_tessera_specimen(payload: TesseraLinkPayload, db: Session = Depends(get
         return {"ok": False}
     except Exception:
         return {"ok": False}
+
+
+@router.get("/specimen-history/{specimen_code}")
+def get_specimen_history(
+    specimen_code: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return all molecular runs linked to a specimen code."""
+    from app.models.extraction_run import ExtractionRun, Extraction
+    from app.models.pcr_run import PCRRun, PCRSample
+    from app.models.sanger_run import SangerRun, SangerSample
+    from app.models.library_prep_run import LibraryPrepRun, LibraryPrep
+    from app.models.ngs_run import NGSRun, NGSRunLibrary
+    from sqlalchemy.orm import joinedload
+
+    extractions = (
+        db.query(Extraction)
+        .join(ExtractionRun, Extraction.run_id == ExtractionRun.id)
+        .options(joinedload(Extraction.run).joinedload(ExtractionRun.operator))
+        .filter(Extraction.specimen_code == specimen_code)
+        .all()
+    )
+
+    pcr_samples = (
+        db.query(PCRSample)
+        .join(PCRRun, PCRSample.run_id == PCRRun.id)
+        .options(joinedload(PCRSample.run).joinedload(PCRRun.operator))
+        .filter(PCRSample.specimen_code == specimen_code)
+        .all()
+    )
+
+    sanger_samples = (
+        db.query(SangerSample)
+        .join(SangerRun, SangerSample.run_id == SangerRun.id)
+        .options(joinedload(SangerSample.run).joinedload(SangerRun.operator))
+        .filter(SangerSample.specimen_code == specimen_code)
+        .all()
+    )
+
+    library_preps = (
+        db.query(LibraryPrep)
+        .join(LibraryPrepRun, LibraryPrep.run_id == LibraryPrepRun.id)
+        .options(joinedload(LibraryPrep.run).joinedload(LibraryPrepRun.operator))
+        .filter(LibraryPrep.specimen_code == specimen_code)
+        .all()
+    )
+
+    ngs_libraries = (
+        db.query(NGSRunLibrary)
+        .join(NGSRun, NGSRunLibrary.ngs_run_id == NGSRun.id)
+        .options(joinedload(NGSRunLibrary.ngs_run).joinedload(NGSRun.operator))
+        .filter(NGSRunLibrary.specimen_code == specimen_code)
+        .all()
+    )
+
+    def _run_info(run):
+        return {
+            "id": run.id,
+            "date": str(getattr(run, 'run_date', None) or getattr(run, 'date', None) or ''),
+            "operator": run.operator.username if run.operator else None,
+            "project_id": run.project_id,
+        }
+
+    return {
+        "specimen_code": specimen_code,
+        "extractions": [
+            {**_run_info(e.run), "run_id": e.run_id, "sample_id": e.id,
+             "yield_ng_ul": e.yield_ng_ul, "qc_status": e.qc_status,
+             "extraction_type": e.run.extraction_type if e.run else None}
+            for e in extractions
+        ],
+        "pcr_samples": [
+            {**_run_info(s.run), "run_id": s.run_id, "sample_id": s.id,
+             "target_region": s.run.target_region if s.run else None,
+             "gel_result": s.gel_result, "qc_status": s.qc_status}
+            for s in pcr_samples
+        ],
+        "sanger_samples": [
+            {**_run_info(s.run), "run_id": s.run_id, "sample_id": s.id,
+             "sequence_length_bp": s.sequence_length_bp, "qc_status": s.qc_status,
+             "primer": s.run.primer if s.run else None}
+            for s in sanger_samples
+        ],
+        "library_preps": [
+            {**_run_info(lp.run), "run_id": lp.run_id, "sample_id": lp.id,
+             "index_i7": lp.index_i7, "index_i5": lp.index_i5,
+             "qc_status": lp.qc_status}
+            for lp in library_preps
+        ],
+        "ngs_libraries": [
+            {**_run_info(lib.ngs_run), "run_id": lib.ngs_run_id, "library_id": lib.id,
+             "platform": lib.ngs_run.platform if lib.ngs_run else None,
+             "reads_millions": lib.reads_millions, "qc_status": lib.qc_status}
+            for lib in ngs_libraries
+        ],
+    }
 
 
 def _format(s: dict) -> dict:

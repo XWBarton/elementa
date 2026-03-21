@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   addLibraryPrep,
+  bulkAddLibraryPreps,
   createLibraryPrepRun,
   deleteLibraryPrep,
   deleteLibraryPrepRun,
@@ -75,6 +76,17 @@ export function useDeleteLibraryPrep(runId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (sampleId: number) => deleteLibraryPrep(runId, sampleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['library_prep_runs', runId] })
+      qc.invalidateQueries({ queryKey: ['all_library_preps'] })
+    },
+  })
+}
+
+export function useBulkAddLibraryPreps(runId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (codes: string[]) => bulkAddLibraryPreps(runId, codes),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['library_prep_runs', runId] })
       qc.invalidateQueries({ queryKey: ['all_library_preps'] })

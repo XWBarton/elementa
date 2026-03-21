@@ -1,10 +1,10 @@
 import {
   Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, Upload, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined, SearchOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined, SearchOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { useAddSangerSample, useDeleteSangerRun, useDeleteSangerSample, useSangerRun, useUpdateSangerSample } from '../hooks/useSangerRuns'
+import { useAddSangerSample, useBulkAddSangerSamples, useDeleteSangerRun, useDeleteSangerSample, useSangerRun, useUpdateSangerSample } from '../hooks/useSangerRuns'
 import { useAllPCRSamples } from '../hooks/usePCRRuns'
 import { PCRSample, SangerSample, SangerSampleCreate, SangerSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -113,10 +113,13 @@ export default function SangerRunDetailPage() {
   const addSample = useAddSangerSample(runId)
   const updateSample = useUpdateSangerSample(runId)
   const deleteSample = useDeleteSangerSample(runId)
+  const bulkAdd = useBulkAddSangerSamples(runId)
   const deleteRun = useDeleteSangerRun()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editSample, setEditSample] = useState<SangerSample | null>(null)
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
   const [viewSeqSample, setViewSeqSample] = useState<SangerSample | null>(null)
   const [draggingOver, setDraggingOver] = useState<number | null>(null)
   const [savingSeq, setSavingSeq] = useState<number | null>(null)
@@ -192,6 +195,15 @@ export default function SangerRunDetailPage() {
     const reader = new FileReader()
     reader.onload = ev => handleFileParsed(parseSeqFile(ev.target?.result as string), seq => saveSeqToSample(seq, sample))
     reader.readAsText(file)
+  }
+
+  const handleBulkPaste = async () => {
+    const codes = bulkText.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+    if (!codes.length) { message.error('No codes entered'); return }
+    await bulkAdd.mutateAsync(codes)
+    message.success(`${codes.length} samples added`)
+    setBulkText('')
+    setBulkModalOpen(false)
   }
 
   const handleAddSample = async (values: SangerSampleCreate) => {
@@ -386,7 +398,12 @@ export default function SangerRunDetailPage() {
 
       <Card
         title="Samples"
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Sample</Button>}
+        extra={
+          <Space>
+            <Button icon={<UnorderedListOutlined />} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Sample</Button>
+          </Space>
+        }
       >
         <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
           Drag a .fasta / .fastq file directly onto a row to load its sequence
@@ -452,6 +469,25 @@ export default function SangerRunDetailPage() {
         width={720}
       >
         {viewSeqSample?.sequence && <SequenceViewer sequence={viewSeqSample.sequence} />}
+      </Modal>
+
+      <Modal
+        title="Bulk Add Samples"
+        open={bulkModalOpen}
+        onCancel={() => { setBulkModalOpen(false); setBulkText('') }}
+        onOk={handleBulkPaste}
+        okText="Add Samples"
+        confirmLoading={bulkAdd.isPending}
+      >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+          Paste specimen codes (one per line or comma-separated). Each code will be linked to the most recent PCR sample for that specimen.
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={10}
+          value={bulkText}
+          onChange={e => setBulkText(e.target.value)}
+          placeholder="AMPH2024-001&#10;AMPH2024-002&#10;AMPH2024-003"
+        />
       </Modal>
 
       <RunAttachmentsPanel runType="sanger" runId={run.id} />

@@ -7,6 +7,7 @@ import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
 import { usePrimers } from '../hooks/usePrimers'
+import { Primer } from '../types'
 import { SangerRunCreate } from '../types'
 
 export default function SangerRunFormPage() {
@@ -25,6 +26,20 @@ export default function SangerRunFormPage() {
     label: `${p.name}${p.direction ? ` (${p.direction})` : ''}${p.target_gene ? ` — ${p.target_gene}` : ''}`,
     value: p.name,
   }))
+
+  const primerIdOptions = (primers ?? []).map((p: Primer) => ({
+    label: `${p.name}${p.direction ? ` (${p.direction})` : ''}${p.target_gene ? ` — ${p.target_gene}` : ''}`,
+    value: p.id,
+  }))
+
+  const primerMap: Record<number, Primer> = {}
+  ;(primers ?? []).forEach((p: Primer) => { primerMap[p.id] = p })
+
+  const handlePrimerSelect = (primerId: number | null) => {
+    if (primerId == null) return
+    const p = primerMap[primerId]
+    if (p) form.setFieldValue('primer', p.name)
+  }
   const createRun = useCreateSangerRun()
   const updateRun = useUpdateSangerRun()
 
@@ -73,6 +88,17 @@ export default function SangerRunFormPage() {
                 label: `${p.name}${p.version ? ` ${p.version}` : ''}${p.category ? ` [${p.category}]` : ''}`,
                 value: p.id,
               })) ?? []}
+            />
+          </Form.Item>
+          {/* Primer FK — links run to primer record and auto-fills text field */}
+          <Form.Item label="Primer (optional — auto-fills primer name and saves FK)" name="primer_id">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select a primer record…"
+              options={primerIdOptions}
+              onChange={v => handlePrimerSelect(v ?? null)}
             />
           </Form.Item>
           <Form.Item label="Primer" name="primer">

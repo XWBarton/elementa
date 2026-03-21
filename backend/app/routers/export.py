@@ -90,7 +90,6 @@ PCR_FIELDS = [
 @router.get("/pcr-samples")
 def export_pcr_samples(db: Session = Depends(get_db), _=Depends(get_current_user)):
     from app.models.pcr_run import PCRRun, PCRSample
-    from app.models.extraction_run import Extraction
 
     runs = (
         db.query(PCRRun)
@@ -139,7 +138,6 @@ SANGER_FIELDS = [
 def export_sanger_samples(db: Session = Depends(get_db), _=Depends(get_current_user)):
     from app.models.sanger_run import SangerRun, SangerSample
     from app.models.pcr_run import PCRSample
-    from app.models.extraction_run import Extraction
 
     runs = (
         db.query(SangerRun)
@@ -195,7 +193,6 @@ LIBRARY_PREP_FIELDS = [
 @router.get("/library-preps")
 def export_library_preps(db: Session = Depends(get_db), _=Depends(get_current_user)):
     from app.models.library_prep_run import LibraryPrepRun, LibraryPrep
-    from app.models.extraction_run import Extraction
 
     runs = (
         db.query(LibraryPrepRun)
@@ -245,7 +242,6 @@ NGS_FIELDS = [
 def export_ngs_libraries(db: Session = Depends(get_db), _=Depends(get_current_user)):
     from app.models.ngs_run import NGSRun, NGSRunLibrary
     from app.models.library_prep_run import LibraryPrep
-    from app.models.extraction_run import Extraction
 
     runs = (
         db.query(NGSRun)
@@ -289,32 +285,13 @@ def export_ngs_libraries(db: Session = Depends(get_db), _=Depends(get_current_us
 
 # ── database backup & restore ─────────────────────────────────────────────────
 
-@router.get("/backup")
-def download_backup(_=Depends(require_admin)):
-    db_path = settings.DATABASE_URL.replace("sqlite:///", "", 1)
-    conn = sqlite3.connect(db_path)
-    data = conn.serialize()
-    conn.close()
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
-    filename = f"elementa_backup_{timestamp}.db"
-    return StreamingResponse(
-        iter([data]),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
-@router.post("/restore")
-async def restore_backup(file: UploadFile = File(...), _=Depends(require_admin)):
-    data = await file.read()
-
-    # Validate SQLite magic bytes
+def _restore_db_bytes(data: bytes) -> None:
+    """Restore a raw SQLite byte string into the live database."""
     if not data.startswith(b"SQLite format 3\x00"):
         raise HTTPException(status_code=400, detail="File is not a valid SQLite database")
 
     tmp_path = None
     try:
-        # Write to temp file and verify it opens cleanly
         fd, tmp_path = tempfile.mkstemp(suffix=".db")
         with os.fdopen(fd, "wb") as f:
             f.write(data)
@@ -327,11 +304,8 @@ async def restore_backup(file: UploadFile = File(...), _=Depends(require_admin))
         finally:
             test_conn.close()
 
-        # Close all pooled SQLAlchemy connections before swapping
         engine.dispose()
 
-        # Use sqlite3.backup() — correctly handles WAL mode
-        # (a plain file swap would leave stale -wal/-shm files and silently lose data)
         db_path = settings.DATABASE_URL.replace("sqlite:///", "", 1)
         src = sqlite3.connect(tmp_path)
         dst = sqlite3.connect(db_path)
@@ -348,5 +322,91 @@ async def restore_backup(file: UploadFile = File(...), _=Depends(require_admin))
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+@router.get("/backup")
+def download_backup(_=Depends(require_admin)):
+    import io
+    import json
+    import zipfile
+    from pathlib import Path
+
+    db_path = settings.DATABASE_URL.replace("sqlite:///", "", 1)
+    conn = sqlite3.connect(db_path)
+    db_bytes = conn.serialize()
+    conn.close()
+
+    ATTACH_DIR = Path("/data/attachments")
+
+    # Build manifest: arc_name -> filename on disk
+    manifest = {}
+    if ATTACH_DIR.exists():
+        for f in ATTACH_DIR.iterdir():
+            if f.is_file():
+                arc = f"attachments/{f.name}"
+                manifest[arc] = f.name
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("elementa.db", db_bytes)
+        zf.writestr("attachment_manifest.json", json.dumps(manifest, indent=2))
+        for arc_name, filename in manifest.items():
+            disk_path = ATTACH_DIR / filename
+            if disk_path.is_file():
+                zf.write(disk_path, arcname=arc_name)
+
+    buf.seek(0)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
+    filename_out = f"elementa_backup_{timestamp}.zip"
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename_out}"'},
+    )
+
+
+@router.post("/restore")
+async def restore_backup(file: UploadFile = File(...), _=Depends(require_admin)):
+    import io
+    import json
+    import shutil
+    import zipfile
+    from pathlib import Path
+
+    data = await file.read()
+    ATTACH_DIR = Path("/data/attachments")
+
+    is_zip = data[:4] == b"PK\x03\x04"
+    is_sqlite = data.startswith(b"SQLite format 3\x00")
+
+    if is_zip:
+        try:
+            zf = zipfile.ZipFile(io.BytesIO(data))
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="Invalid ZIP file.")
+        names = zf.namelist()
+        if "elementa.db" not in names:
+            raise HTTPException(status_code=400, detail="ZIP does not contain elementa.db.")
+        db_bytes = zf.read("elementa.db")
+        _restore_db_bytes(db_bytes)
+        # Restore attachments
+        shutil.rmtree(ATTACH_DIR, ignore_errors=True)
+        ATTACH_DIR.mkdir(parents=True, exist_ok=True)
+        if "attachment_manifest.json" in names:
+            manifest = json.loads(zf.read("attachment_manifest.json").decode())
+            for arc_name, filename in manifest.items():
+                if arc_name in names:
+                    (ATTACH_DIR / filename).write_bytes(zf.read(arc_name))
+        else:
+            # Legacy: files directly in attachments/
+            for entry in [n for n in names if n.startswith("attachments/") and not n.endswith("/")]:
+                rel = entry[len("attachments/"):]
+                dest = ATTACH_DIR / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(zf.read(entry))
+    elif is_sqlite:
+        _restore_db_bytes(data)
+    else:
+        raise HTTPException(status_code=400, detail="File must be an Elementa backup ZIP or a raw SQLite .db file.")
 
     return {"ok": True, "message": "Database restored. Please refresh the page."}

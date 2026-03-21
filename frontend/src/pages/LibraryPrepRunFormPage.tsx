@@ -6,6 +6,7 @@ import { useCreateLibraryPrepRun, useLibraryPrepRun, useUpdateLibraryPrepRun } f
 import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
+import { usePrimerPairs } from '../hooks/usePrimers'
 import { LibraryPrepRunCreate } from '../types'
 
 export default function LibraryPrepRunFormPage() {
@@ -18,8 +19,27 @@ export default function LibraryPrepRunFormPage() {
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
   const { data: protocols } = useAllProtocols()
+  const { data: primerPairs } = usePrimerPairs()
   const createRun = useCreateLibraryPrepRun()
   const updateRun = useUpdateLibraryPrepRun()
+
+  const pairOptions = (primerPairs ?? []).map(p => ({
+    label: p.name
+      ? `${p.name}${p.amplicon_size_bp ? ` (~${p.amplicon_size_bp} bp)` : ''}`
+      : [p.forward_primer?.name, p.reverse_primer?.name].filter(Boolean).join(' / ') + (p.amplicon_size_bp ? ` (~${p.amplicon_size_bp} bp)` : ''),
+    value: p.id,
+  }))
+
+  const handlePairSelect = (pairId: number | null) => {
+    if (pairId == null) return
+    const pair = (primerPairs ?? []).find(p => p.id === pairId)
+    if (!pair) return
+    form.setFieldsValue({
+      primer_f: pair.forward_primer?.name ?? form.getFieldValue('primer_f'),
+      primer_r: pair.reverse_primer?.name ?? form.getFieldValue('primer_r'),
+      ...(pair.target_gene ? { target_region: pair.target_gene } : {}),
+    })
+  }
 
   useEffect(() => {
     if (run && isEdit) {
@@ -70,6 +90,17 @@ export default function LibraryPrepRunFormPage() {
           </Form.Item>
           <Form.Item label="Kit" name="kit"><Input placeholder="e.g. NEBNext Ultra II" /></Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. ITS2, 16S" /></Form.Item>
+          {/* Primer pair FK — auto-fills primer fields and saves FK to run */}
+          <Form.Item label="Primer Pair (optional — auto-fills primers)" name="primer_pair_id">
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select a known primer pair…"
+              options={pairOptions}
+              onChange={v => handlePairSelect(v ?? null)}
+            />
+          </Form.Item>
           <Form.Item label="Forward Primer" name="primer_f"><Input /></Form.Item>
           <Form.Item label="Reverse Primer" name="primer_r"><Input /></Form.Item>
           <Form.Item label="Notes" name="notes"><Input.TextArea rows={2} /></Form.Item>

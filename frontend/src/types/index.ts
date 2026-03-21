@@ -216,6 +216,8 @@ export interface PCRRun {
   target_region?: string
   primer_f?: string
   primer_r?: string
+  primer_pair_id?: number
+  primer_pair?: PrimerPairRecord
   annealing_temp_c?: number
   cycles?: number
   polymerase?: string
@@ -234,6 +236,7 @@ export interface PCRRunCreate {
   target_region?: string
   primer_f?: string
   primer_r?: string
+  primer_pair_id?: number
   annealing_temp_c?: number
   cycles?: number
   polymerase?: string
@@ -284,6 +287,8 @@ export interface SangerRun {
   project_id?: number
   project?: Project
   primer?: string
+  primer_id?: number
+  primer_record?: Primer
   direction?: SangerDirection
   service_provider?: string
   order_id?: string
@@ -299,6 +304,7 @@ export interface SangerRunCreate {
   project_id: number
   protocol_id?: number
   primer?: string
+  primer_id?: number
   direction?: SangerDirection
   service_provider?: string
   order_id?: string
@@ -358,6 +364,8 @@ export interface LibraryPrepRun {
   target_region?: string
   primer_f?: string
   primer_r?: string
+  primer_pair_id?: number
+  primer_pair?: PrimerPairRecord
   notes?: string
   created_at: string
   sample_count: number
@@ -373,6 +381,7 @@ export interface LibraryPrepRunCreate {
   target_region?: string
   primer_f?: string
   primer_r?: string
+  primer_pair_id?: number
   notes?: string
 }
 
@@ -386,8 +395,20 @@ export interface NGSRunLibrary {
   library_prep_id?: number
   specimen_code?: string
   sample_name?: string
+  qc_status?: string
+  reads_millions?: number
   library_prep?: LibraryPrep
 }
+
+export interface NGSRunLibraryCreate {
+  library_prep_id?: number
+  specimen_code?: string
+  sample_name?: string
+  qc_status?: string
+  reads_millions?: number
+}
+
+export interface NGSRunLibraryUpdate extends Partial<NGSRunLibraryCreate> {}
 
 export interface NGSRun {
   id: number
@@ -403,6 +424,7 @@ export interface NGSRun {
   protocol?: Protocol
   flow_cell_id?: string
   reagent_kit?: string
+  storage_host?: string
   output_path?: string
   total_reads?: number
   q30_percent?: number
@@ -422,6 +444,7 @@ export interface NGSRunCreate {
   protocol_id?: number
   flow_cell_id?: string
   reagent_kit?: string
+  storage_host?: string
   output_path?: string
   total_reads?: number
   q30_percent?: number

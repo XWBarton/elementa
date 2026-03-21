@@ -7,6 +7,11 @@ from app.schemas.user import UserRead
 from app.schemas.pcr_run import PCRSampleRead
 from app.schemas.protocol import ProtocolRead
 from app.schemas.project import ProjectRead
+from app.schemas.primer import PrimerRead
+
+
+class BulkSpecimenCodePayload(BaseModel):
+    specimen_codes: list[str]
 
 
 class SangerSampleCreate(BaseModel):
@@ -56,6 +61,7 @@ class SangerRunCreate(BaseModel):
     operator_id: int
     project_id: int
     protocol_id: Optional[int] = None
+    primer_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None
@@ -68,6 +74,7 @@ class SangerRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
+    primer_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None
@@ -84,6 +91,8 @@ class SangerRunRead(BaseModel):
     protocol: Optional[ProtocolRead] = None
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
+    primer_id: Optional[int] = None
+    primer_record: Optional[PrimerRead] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
     service_provider: Optional[str] = None

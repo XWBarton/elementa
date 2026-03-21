@@ -46,3 +46,8 @@ export async function updateSangerSample(runId: number, sampleId: number, payloa
 export async function deleteSangerSample(runId: number, sampleId: number): Promise<void> {
   await client.delete(`/sanger-runs/${runId}/samples/${sampleId}`)
 }
+
+export async function bulkAddSangerSamples(runId: number, specimenCodes: string[]): Promise<SangerSample[]> {
+  const { data } = await client.post(`/sanger-runs/${runId}/samples/bulk`, { specimen_codes: specimenCodes })
+  return data
+}
