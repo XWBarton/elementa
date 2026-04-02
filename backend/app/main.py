@@ -59,7 +59,7 @@ def migrate_db():
         ("sanger_runs", "is_locked", "ALTER TABLE sanger_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
         ("library_prep_runs", "is_locked", "ALTER TABLE library_prep_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
         ("ngs_runs", "is_locked", "ALTER TABLE ngs_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
-        ("protocols", "references", "ALTER TABLE protocols ADD COLUMN references TEXT"),
+        ("protocols", "references", 'ALTER TABLE protocols ADD COLUMN "references" TEXT'),
     ]
     with engine.connect() as conn:
         for table, column, sql in migrations:

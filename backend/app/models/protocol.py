@@ -22,7 +22,7 @@ class Protocol(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     steps: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array
     materials: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array
-    references: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array of {title, url}
+    references: Mapped[Optional[str]] = mapped_column("references", Text, nullable=True)  # JSON array of {title, url}
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
