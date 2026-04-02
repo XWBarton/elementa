@@ -73,7 +73,35 @@ def update_run(run_id: int, data: SangerRunUpdate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Sanger run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     obj = crud.update_run(db, obj, data)
+    return _run_detail(obj)
+
+
+@router.post("/{run_id}/lock", response_model=SangerRunDetail)
+def lock_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    obj = crud.get_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Sanger run not found")
+    if not current_user.is_admin and obj.operator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorised to lock this run")
+    obj.is_locked = True
+    db.commit()
+    db.refresh(obj)
+    return _run_detail(obj)
+
+
+@router.post("/{run_id}/unlock", response_model=SangerRunDetail)
+def unlock_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    obj = crud.get_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Sanger run not found")
+    if not current_user.is_admin and obj.operator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorised to unlock this run")
+    obj.is_locked = False
+    db.commit()
+    db.refresh(obj)
     return _run_detail(obj)
 
 
@@ -82,6 +110,8 @@ def delete_run(run_id: int, db: Session = Depends(get_db), _=Depends(require_adm
     obj = crud.get_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Sanger run not found")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     specimen_codes = [s.specimen_code for s in obj.samples if s.specimen_code]
     crud.delete_run(db, obj)
     for code in specimen_codes:
@@ -96,6 +126,8 @@ def add_sample(run_id: int, data: SangerSampleCreate, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Sanger run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return crud.add_sample(db, run_id, data)
 
 
@@ -106,6 +138,8 @@ def add_samples_bulk(run_id: int, payload: BulkSpecimenCodePayload, db: Session 
         raise HTTPException(status_code=404, detail="Sanger run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return crud.add_samples_bulk(db, run_id, payload.specimen_codes)
 
 
@@ -122,6 +156,8 @@ def update_sample(
         raise HTTPException(status_code=404, detail="Sample not found")
     if not _has_access(sample.run, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if sample.run.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return crud.update_sample(db, sample, data)
 
 
@@ -132,6 +168,8 @@ def delete_sample(run_id: int, sample_id: int, db: Session = Depends(get_db), cu
         raise HTTPException(status_code=404, detail="Sample not found")
     if not _has_access(sample.run, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if sample.run.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     specimen_code = sample.specimen_code
     crud.delete_sample(db, sample)
     notify_unlink(db, specimen_code, str(run_id))

@@ -56,3 +56,13 @@ export async function bulkAddLibraryPreps(runId: number, specimenCodes: string[]
   const { data } = await client.post(`/library-prep-runs/${runId}/samples/bulk`, { specimen_codes: specimenCodes })
   return data
 }
+
+export async function lockLibraryPrepRun(id: number): Promise<LibraryPrepRun> {
+  const { data } = await client.post(`/library-prep-runs/${id}/lock`)
+  return data
+}
+
+export async function unlockLibraryPrepRun(id: number): Promise<LibraryPrepRun> {
+  const { data } = await client.post(`/library-prep-runs/${id}/unlock`)
+  return data
+}

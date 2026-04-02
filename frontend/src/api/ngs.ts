@@ -43,3 +43,13 @@ export async function bulkAddNGSLibraries(runId: number, specimenCodes: string[]
   const { data } = await client.post(`/ngs-runs/${runId}/libraries/bulk`, { specimen_codes: specimenCodes })
   return data
 }
+
+export async function lockNGSRun(id: number): Promise<NGSRun> {
+  const { data } = await client.post(`/ngs-runs/${id}/lock`)
+  return data
+}
+
+export async function unlockNGSRun(id: number): Promise<NGSRun> {
+  const { data } = await client.post(`/ngs-runs/${id}/unlock`)
+  return data
+}

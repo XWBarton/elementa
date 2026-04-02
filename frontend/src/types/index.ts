@@ -57,6 +57,11 @@ export interface ProtocolStep {
   final_extend_time_s?: number
 }
 
+export interface ProtocolReference {
+  title: string
+  url: string
+}
+
 export interface Protocol {
   id: number
   name: string
@@ -65,6 +70,7 @@ export interface Protocol {
   description?: string
   steps?: ProtocolStep[]
   materials?: string[]
+  references?: ProtocolReference[]
   notes?: string
   created_by_id?: number
   created_by?: User
@@ -78,6 +84,7 @@ export interface ProtocolCreate {
   description?: string
   steps?: ProtocolStep[]
   materials?: string[]
+  references?: ProtocolReference[]
   notes?: string
 }
 
@@ -156,6 +163,7 @@ export interface ExtractionRun {
   elution_volume_ul?: number
   protocol_notes?: string
   notes?: string
+  is_locked?: boolean
   created_at: string
   sample_count: number
   samples?: Extraction[]
@@ -216,8 +224,8 @@ export interface PCRRun {
   target_region?: string
   primer_f?: string
   primer_r?: string
-  primer_pair_id?: number
-  primer_pair?: PrimerPairRecord
+  primer_pairs?: PrimerPairRecord[]
+  is_locked?: boolean
   annealing_temp_c?: number
   cycles?: number
   polymerase?: string
@@ -236,7 +244,7 @@ export interface PCRRunCreate {
   target_region?: string
   primer_f?: string
   primer_r?: string
-  primer_pair_id?: number
+  primer_pair_ids?: number[]
   annealing_temp_c?: number
   cycles?: number
   polymerase?: string
@@ -293,6 +301,7 @@ export interface SangerRun {
   service_provider?: string
   order_id?: string
   notes?: string
+  is_locked?: boolean
   created_at: string
   sample_count: number
   samples?: SangerSample[]
@@ -364,8 +373,8 @@ export interface LibraryPrepRun {
   target_region?: string
   primer_f?: string
   primer_r?: string
-  primer_pair_id?: number
-  primer_pair?: PrimerPairRecord
+  primer_pairs?: PrimerPairRecord[]
+  is_locked?: boolean
   notes?: string
   created_at: string
   sample_count: number
@@ -381,7 +390,7 @@ export interface LibraryPrepRunCreate {
   target_region?: string
   primer_f?: string
   primer_r?: string
-  primer_pair_id?: number
+  primer_pair_ids?: number[]
   notes?: string
 }
 
@@ -430,6 +439,7 @@ export interface NGSRun {
   q30_percent?: number
   mean_read_length_bp?: number
   notes?: string
+  is_locked?: boolean
   libraries: NGSRunLibrary[]
   created_at: string
 }

@@ -7,6 +7,7 @@ import { useAllLibraryPreps } from '../hooks/useLibraryPrepRuns'
 import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
+import { useAuth } from '../context/AuthContext'
 import { LibraryPrep, NGSPlatform } from '../types'
 
 const PLATFORMS: NGSPlatform[] = ['Illumina', 'ONT', 'PacBio', 'Other']
@@ -17,6 +18,7 @@ export default function NGSRunFormPage() {
   const navigate = useNavigate()
   const [form] = Form.useForm()
 
+  const { user } = useAuth()
   const { data: existing } = useNGSRun(isEdit ? Number(id) : 0)
   const { data: users } = useUsers()
   const { data: projects } = useProjects()
@@ -24,6 +26,12 @@ export default function NGSRunFormPage() {
   const { data: protocols } = useAllProtocols()
   const createMutation = useCreateNGSRun()
   const updateMutation = useUpdateNGSRun()
+
+  useEffect(() => {
+    if (!isEdit && user) {
+      form.setFieldValue('operator_id', user.id)
+    }
+  }, [user, isEdit, form])
 
   useEffect(() => {
     if (existing) {

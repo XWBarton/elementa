@@ -7,6 +7,7 @@ import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
 import { usePrimerPairs } from '../hooks/usePrimers'
+import { useAuth } from '../context/AuthContext'
 import { LibraryPrepRunCreate } from '../types'
 
 export default function LibraryPrepRunFormPage() {
@@ -15,6 +16,7 @@ export default function LibraryPrepRunFormPage() {
   const navigate = useNavigate()
   const [form] = Form.useForm()
 
+  const { user } = useAuth()
   const { data: run } = useLibraryPrepRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
@@ -30,20 +32,19 @@ export default function LibraryPrepRunFormPage() {
     value: p.id,
   }))
 
-  const handlePairSelect = (pairId: number | null) => {
-    if (pairId == null) return
-    const pair = (primerPairs ?? []).find(p => p.id === pairId)
-    if (!pair) return
-    form.setFieldsValue({
-      primer_f: pair.forward_primer?.name ?? form.getFieldValue('primer_f'),
-      primer_r: pair.reverse_primer?.name ?? form.getFieldValue('primer_r'),
-      ...(pair.target_gene ? { target_region: pair.target_gene } : {}),
-    })
-  }
+  useEffect(() => {
+    if (!isEdit && user) {
+      form.setFieldValue('operator_id', user.id)
+    }
+  }, [user, isEdit, form])
 
   useEffect(() => {
     if (run && isEdit) {
-      form.setFieldsValue({ ...run, run_date: run.run_date ? dayjs(run.run_date) : null })
+      form.setFieldsValue({
+        ...run,
+        run_date: run.run_date ? dayjs(run.run_date) : null,
+        primer_pair_ids: (run.primer_pairs ?? []).map(p => p.id),
+      })
     }
   }, [run, isEdit, form])
 
@@ -90,19 +91,17 @@ export default function LibraryPrepRunFormPage() {
           </Form.Item>
           <Form.Item label="Kit" name="kit"><Input placeholder="e.g. NEBNext Ultra II" /></Form.Item>
           <Form.Item label="Target Region" name="target_region"><Input placeholder="e.g. ITS2, 16S" /></Form.Item>
-          {/* Primer pair FK — auto-fills primer fields and saves FK to run */}
-          <Form.Item label="Primer Pair (optional — auto-fills primers)" name="primer_pair_id">
+          {/* Primer pair multi-select for multiplexing */}
+          <Form.Item label="Primer Pairs" name="primer_pair_ids">
             <Select
+              mode="multiple"
               allowClear
               showSearch
               optionFilterProp="label"
-              placeholder="Select a known primer pair…"
+              placeholder="Select one or more primer pairs…"
               options={pairOptions}
-              onChange={v => handlePairSelect(v ?? null)}
             />
           </Form.Item>
-          <Form.Item label="Forward Primer" name="primer_f"><Input /></Form.Item>
-          <Form.Item label="Reverse Primer" name="primer_r"><Input /></Form.Item>
           <Form.Item label="Notes" name="notes"><Input.TextArea rows={2} /></Form.Item>
           <Form.Item>
             <Space>

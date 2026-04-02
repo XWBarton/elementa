@@ -7,6 +7,7 @@ import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
 import { usePrimers } from '../hooks/usePrimers'
+import { useAuth } from '../context/AuthContext'
 import { Primer } from '../types'
 import { SangerRunCreate } from '../types'
 
@@ -16,6 +17,7 @@ export default function SangerRunFormPage() {
   const navigate = useNavigate()
   const [form] = Form.useForm()
 
+  const { user } = useAuth()
   const { data: run } = useSangerRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
@@ -42,6 +44,12 @@ export default function SangerRunFormPage() {
   }
   const createRun = useCreateSangerRun()
   const updateRun = useUpdateSangerRun()
+
+  useEffect(() => {
+    if (!isEdit && user) {
+      form.setFieldValue('operator_id', user.id)
+    }
+  }, [user, isEdit, form])
 
   useEffect(() => {
     if (run && isEdit) {

@@ -8,6 +8,8 @@ import {
   getAllLibraryPreps,
   getLibraryPrepRun,
   getLibraryPrepRuns,
+  lockLibraryPrepRun,
+  unlockLibraryPrepRun,
   updateLibraryPrep,
   updateLibraryPrepRun,
 } from '../api/library_prep_runs'
@@ -91,5 +93,21 @@ export function useBulkAddLibraryPreps(runId: number) {
       qc.invalidateQueries({ queryKey: ['library_prep_runs', runId] })
       qc.invalidateQueries({ queryKey: ['all_library_preps'] })
     },
+  })
+}
+
+export function useLockLibraryPrepRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: lockLibraryPrepRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['library_prep_runs'] }),
+  })
+}
+
+export function useUnlockLibraryPrepRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: unlockLibraryPrepRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['library_prep_runs'] }),
   })
 }

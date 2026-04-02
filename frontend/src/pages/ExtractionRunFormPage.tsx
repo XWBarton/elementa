@@ -6,6 +6,7 @@ import { useCreateExtractionRun, useExtractionRun, useUpdateExtractionRun } from
 import { useUsers } from '../hooks/useUsers'
 import { useProjects } from '../hooks/useProjects'
 import { useAllProtocols } from '../hooks/useProtocols'
+import { useAuth } from '../context/AuthContext'
 import { addExtractionSample } from '../api/extraction_runs'
 import { ExtractionRunCreate } from '../types'
 
@@ -17,12 +18,19 @@ export default function ExtractionRunFormPage() {
   const specimenCode = searchParams.get('specimen')
   const [form] = Form.useForm()
 
+  const { user } = useAuth()
   const { data: run } = useExtractionRun(isEdit ? Number(id) : 0)
   const { data: usersData } = useUsers({ limit: 200 })
   const { data: projects } = useProjects()
   const { data: protocols } = useAllProtocols()
   const createRun = useCreateExtractionRun()
   const updateRun = useUpdateExtractionRun()
+
+  useEffect(() => {
+    if (!isEdit && user) {
+      form.setFieldValue('operator_id', user.id)
+    }
+  }, [user, isEdit, form])
 
   useEffect(() => {
     if (run && isEdit) {

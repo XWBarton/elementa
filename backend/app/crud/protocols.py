@@ -28,6 +28,8 @@ def create_protocol(db: Session, data: ProtocolCreate, user_id: Optional[int] = 
         raw["steps"] = json.dumps(raw["steps"])
     if raw.get("materials") is not None:
         raw["materials"] = json.dumps(raw["materials"])
+    if raw.get("references") is not None:
+        raw["references"] = json.dumps(raw["references"])
     protocol = Protocol(**raw, created_by_id=user_id)
     db.add(protocol)
     db.commit()
@@ -40,6 +42,8 @@ def update_protocol(db: Session, obj: Protocol, data: ProtocolUpdate) -> Protoco
         if key == "steps" and value is not None:
             value = json.dumps(value)
         elif key == "materials" and value is not None:
+            value = json.dumps(value)
+        elif key == "references" and value is not None:
             value = json.dumps(value)
         setattr(obj, key, value)
     db.commit()

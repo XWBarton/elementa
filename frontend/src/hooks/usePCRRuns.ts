@@ -8,6 +8,8 @@ import {
   getAllPCRSamples,
   getPCRRun,
   getPCRRuns,
+  lockPCRRun,
+  unlockPCRRun,
   updatePCRRun,
   updatePCRSample,
 } from '../api/pcr_runs'
@@ -79,5 +81,21 @@ export function useBulkAddPCRSamples(runId: number) {
   return useMutation({
     mutationFn: (codes: string[]) => bulkAddPCRSamples(runId, codes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pcr_runs', runId] }),
+  })
+}
+
+export function useLockPCRRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: lockPCRRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pcr_runs'] }),
+  })
+}
+
+export function useUnlockPCRRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: unlockPCRRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pcr_runs'] }),
   })
 }

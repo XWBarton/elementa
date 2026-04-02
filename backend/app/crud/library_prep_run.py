@@ -1,10 +1,11 @@
 from typing import List, Optional, Tuple
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.library_prep_run import LibraryPrepRun, LibraryPrep
 from app.models.pcr_run import PCRSample
+from app.models.primer import PrimerPair
 from app.schemas.library_prep_run import LibraryPrepRunCreate, LibraryPrepRunUpdate, LibraryPrepCreate, LibraryPrepUpdate
 
 
@@ -12,9 +13,15 @@ def _run_query(db: Session):
     return db.query(LibraryPrepRun).options(
         joinedload(LibraryPrepRun.operator),
         joinedload(LibraryPrepRun.protocol),
+        selectinload(LibraryPrepRun.primer_pairs).joinedload(PrimerPair.forward_primer),
+        selectinload(LibraryPrepRun.primer_pairs).joinedload(PrimerPair.reverse_primer),
         joinedload(LibraryPrepRun.samples).joinedload(LibraryPrep.extraction),
         joinedload(LibraryPrepRun.samples).joinedload(LibraryPrep.pcr_sample).joinedload(PCRSample.extraction),
     )
+
+
+def _set_primer_pairs(db: Session, run: LibraryPrepRun, ids: List[int]) -> None:
+    run.primer_pairs = db.query(PrimerPair).filter(PrimerPair.id.in_(ids)).all()
 
 
 def _sample_query(db: Session):
@@ -49,16 +56,23 @@ def get_run(db: Session, run_id: int) -> Optional[LibraryPrepRun]:
 
 
 def create_run(db: Session, data: LibraryPrepRunCreate) -> LibraryPrepRun:
-    run = LibraryPrepRun(**data.model_dump())
+    payload = data.model_dump(exclude={"primer_pair_ids"})
+    run = LibraryPrepRun(**payload)
     db.add(run)
+    db.flush()
+    if data.primer_pair_ids:
+        _set_primer_pairs(db, run, data.primer_pair_ids)
     db.commit()
     db.refresh(run)
     return get_run(db, run.id)
 
 
 def update_run(db: Session, obj: LibraryPrepRun, data: LibraryPrepRunUpdate) -> LibraryPrepRun:
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True, exclude={"primer_pair_ids"})
+    for key, value in update_data.items():
         setattr(obj, key, value)
+    if "primer_pair_ids" in data.model_fields_set:
+        _set_primer_pairs(db, obj, data.primer_pair_ids or [])
     db.commit()
     db.refresh(obj)
     return get_run(db, obj.id)

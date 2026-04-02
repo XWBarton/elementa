@@ -74,7 +74,7 @@ class LibraryPrepRunCreate(BaseModel):
     protocol_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
-    primer_pair_id: Optional[int] = None
+    primer_pair_ids: Optional[List[int]] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     notes: Optional[str] = None
@@ -87,7 +87,7 @@ class LibraryPrepRunUpdate(BaseModel):
     project_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
-    primer_pair_id: Optional[int] = None
+    primer_pair_ids: Optional[List[int]] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     notes: Optional[str] = None
@@ -104,11 +104,11 @@ class LibraryPrepRunRead(BaseModel):
     project: Optional[ProjectRead] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
-    primer_pair_id: Optional[int] = None
-    primer_pair: Optional[PrimerPairRead] = None
+    primer_pairs: List[PrimerPairRead] = []
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     notes: Optional[str] = None
+    is_locked: bool = False
     created_at: datetime
     sample_count: int = 0
 

@@ -1,10 +1,10 @@
 import {
   Button, Card, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, UnorderedListOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, LockOutlined, UnlockOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { useAddPCRSample, useBulkAddPCRSamples, useDeletePCRRun, useDeletePCRSample, usePCRRun, useUpdatePCRSample } from '../hooks/usePCRRuns'
+import { useAddPCRSample, useBulkAddPCRSamples, useDeletePCRRun, useDeletePCRSample, useLockPCRRun, usePCRRun, useUnlockPCRRun, useUpdatePCRSample } from '../hooks/usePCRRuns'
 import { useAllExtractions } from '../hooks/useExtractionRuns'
 import { Extraction, PCRSample, PCRSampleCreate, PCRSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -34,6 +34,8 @@ export default function PCRRunDetailPage() {
   const deleteSample = useDeletePCRSample(runId)
   const bulkAdd = useBulkAddPCRSamples(runId)
   const deleteRun = useDeletePCRRun()
+  const lockRun = useLockPCRRun()
+  const unlockRun = useUnlockPCRRun()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editSample, setEditSample] = useState<PCRSample | null>(null)
@@ -158,7 +160,7 @@ export default function PCRRunDetailPage() {
       key: 'actions',
       render: (_: unknown, record: PCRSample) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => { setEditSample(record); editForm.setFieldsValue(record) }} />
+          <Button type="link" icon={<EditOutlined />} disabled={run.is_locked} onClick={() => { setEditSample(record); editForm.setFieldsValue(record) }} />
           <Popconfirm
             title="Delete this sample?"
             description={(() => {
@@ -169,7 +171,7 @@ export default function PCRRunDetailPage() {
             })()}
             onConfirm={() => deleteSample.mutateAsync(record.id).then(() => message.success('Deleted'))}
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} disabled={run.is_locked} />
           </Popconfirm>
         </Space>
       ),
@@ -179,10 +181,18 @@ export default function PCRRunDetailPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>PCR Run #{run.id}</Typography.Title>
+        <Space>
+          <Typography.Title level={3} style={{ margin: 0 }}>PCR Run #{run.id}</Typography.Title>
+          {run.is_locked && <Tag icon={<LockOutlined />} color="warning">Locked</Tag>}
+        </Space>
         <Space>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
-          <Button onClick={() => navigate(`/pcr-runs/${runId}/edit`)}>Edit Run</Button>
+          <Button disabled={run.is_locked} onClick={() => navigate(`/pcr-runs/${runId}/edit`)}>Edit Run</Button>
+          {(user?.is_admin || run.operator_id === user?.id) && (
+            run.is_locked
+              ? <Button icon={<UnlockOutlined />} onClick={() => unlockRun.mutateAsync(runId).then(() => message.success('Run unlocked'))} loading={unlockRun.isPending}>Unlock</Button>
+              : <Button icon={<LockOutlined />} onClick={() => lockRun.mutateAsync(runId).then(() => message.success('Run locked'))} loading={lockRun.isPending}>Lock</Button>
+          )}
           {user?.is_admin && (
             <Popconfirm
               title="Delete this run?"
@@ -198,7 +208,7 @@ export default function PCRRunDetailPage() {
               })()}
               onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/pcr-runs') })}
             >
-              <Button danger>Delete Run</Button>
+              <Button danger disabled={run.is_locked}>Delete Run</Button>
             </Popconfirm>
           )}
         </Space>
@@ -212,7 +222,16 @@ export default function PCRRunDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="Target Region">{run.target_region ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Polymerase">{run.polymerase ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Primers">{[run.primer_f, run.primer_r].filter(Boolean).join(' / ') || '—'}</Descriptions.Item>
+          <Descriptions.Item label="Primer Pairs">
+            {(run.primer_pairs ?? []).length > 0
+              ? (run.primer_pairs ?? []).map(p => (
+                  <Tag key={p.id} color="purple">
+                    {p.name || [p.forward_primer?.name, p.reverse_primer?.name].filter(Boolean).join(' / ')}
+                    {p.amplicon_size_bp ? ` (~${p.amplicon_size_bp} bp)` : ''}
+                  </Tag>
+                ))
+              : '—'}
+          </Descriptions.Item>
           <Descriptions.Item label="Amplicon Size">{run.amplicon_size_bp ? `${run.amplicon_size_bp} bp` : '—'}</Descriptions.Item>
           <Descriptions.Item label="# Samples"><Tag color="blue">{run.sample_count}</Tag></Descriptions.Item>
           <Descriptions.Item label="Protocol">
@@ -225,8 +244,8 @@ export default function PCRRunDetailPage() {
       </Card>
       <Card title="Samples" extra={
         <Space>
-          <Button icon={<UnorderedListOutlined />} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Sample</Button>
+          <Button icon={<UnorderedListOutlined />} disabled={run.is_locked} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
+          <Button type="primary" icon={<PlusOutlined />} disabled={run.is_locked} onClick={() => setAddModalOpen(true)}>Add Sample</Button>
         </Space>
       }>
         <Table dataSource={run.samples ?? []} columns={columns} rowKey="id" size="small" pagination={{ pageSize: 20 }} />

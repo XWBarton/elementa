@@ -14,6 +14,7 @@ import {
   FilePdfOutlined,
   FileTextOutlined,
   ArrowLeftOutlined,
+  LinkOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
@@ -75,6 +76,16 @@ function exportProtocolAsText(protocol: Protocol): string {
           lines.push(`   Final extension: ${step.final_extend_temp_c ?? '?'}°C for ${step.final_extend_time_s ?? '?'} s`)
       }
       lines.push('')
+    })
+  }
+
+  if (protocol.references && protocol.references.length > 0) {
+    lines.push('')
+    lines.push('REFERENCES:')
+    protocol.references.forEach(r => {
+      if (r.title && r.url) lines.push(`- ${r.title}: ${r.url}`)
+      else if (r.title) lines.push(`- ${r.title}`)
+      else if (r.url) lines.push(`- ${r.url}`)
     })
   }
 
@@ -271,6 +282,26 @@ export default function ProtocolDetailPage() {
           ))
         )}
       </Card>
+
+      {/* References */}
+      {protocol.references && protocol.references.length > 0 && (
+        <Card title="References" style={{ marginBottom: 16 }}>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {protocol.references.map((ref, i) => (
+              <li key={i}>
+                {ref.url ? (
+                  <a href={ref.url} target="_blank" rel="noopener noreferrer">
+                    <LinkOutlined style={{ marginRight: 6 }} />
+                    {ref.title || ref.url}
+                  </a>
+                ) : (
+                  ref.title
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* Notes */}
       {protocol.notes && (

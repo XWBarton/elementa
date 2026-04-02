@@ -8,6 +8,7 @@ import {
   InputNumber,
   Modal,
   Popconfirm,
+  Select,
   Space,
   Table,
   Tabs,
@@ -17,7 +18,7 @@ import {
   message,
   notification,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, LinkOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, LinkOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import {
@@ -26,6 +27,8 @@ import {
   useDeleteExtractionRun,
   useDeleteExtractionSample,
   useExtractionRun,
+  useLockExtractionRun,
+  useUnlockExtractionRun,
   useUpdateExtractionSample,
 } from '../hooks/useExtractionRuns'
 import { Extraction, ExtractionCreate, ExtractionUpdate } from '../types'
@@ -52,6 +55,8 @@ export default function ExtractionRunDetailPage() {
   const updateSample = useUpdateExtractionSample(runId)
   const deleteSample = useDeleteExtractionSample(runId)
   const deleteRun = useDeleteExtractionRun()
+  const lockRun = useLockExtractionRun()
+  const unlockRun = useUnlockExtractionRun()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editSample, setEditSample] = useState<Extraction | null>(null)
@@ -209,6 +214,7 @@ export default function ExtractionRunDetailPage() {
           <Button
             type="link"
             icon={<EditOutlined />}
+            disabled={run.is_locked}
             onClick={() => {
               setEditSample(record)
               editForm.setFieldsValue(record)
@@ -221,7 +227,7 @@ export default function ExtractionRunDetailPage() {
               : undefined}
             onConfirm={() => handleDeleteSample(record.id)}
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} disabled={run.is_locked} />
           </Popconfirm>
         </Space>
       ),
@@ -231,12 +237,20 @@ export default function ExtractionRunDetailPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Extraction Run #{run.id}
-        </Typography.Title>
+        <Space>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Extraction Run #{run.id}
+          </Typography.Title>
+          {run.is_locked && <Tag icon={<LockOutlined />} color="warning">Locked</Tag>}
+        </Space>
         <Space>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
-          <Button onClick={() => navigate(`/extraction-runs/${runId}/edit`)}>Edit Run</Button>
+          <Button disabled={run.is_locked} onClick={() => navigate(`/extraction-runs/${runId}/edit`)}>Edit Run</Button>
+          {(user?.is_admin || run.operator_id === user?.id) && (
+            run.is_locked
+              ? <Button icon={<UnlockOutlined />} onClick={() => unlockRun.mutateAsync(runId).then(() => message.success('Run unlocked'))} loading={unlockRun.isPending}>Unlock</Button>
+              : <Button icon={<LockOutlined />} onClick={() => lockRun.mutateAsync(runId).then(() => message.success('Run locked'))} loading={lockRun.isPending}>Lock</Button>
+          )}
           {user?.is_admin && (
             <Popconfirm
               title="Delete this run and all its samples?"
@@ -249,7 +263,7 @@ export default function ExtractionRunDetailPage() {
               })()}
               onConfirm={handleDeleteRun}
             >
-              <Button danger>Delete Run</Button>
+              <Button danger disabled={run.is_locked}>Delete Run</Button>
             </Popconfirm>
           )}
         </Space>
@@ -308,7 +322,7 @@ export default function ExtractionRunDetailPage() {
       <Card
         title="Samples"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
+          <Button type="primary" icon={<PlusOutlined />} disabled={run.is_locked} onClick={openAdd}>
             Add Sample
           </Button>
         }
@@ -351,7 +365,13 @@ export default function ExtractionRunDetailPage() {
                     <InputNumber style={{ width: '100%' }} />
                   </Form.Item>
                   <Form.Item label="Unit" name="input_quantity_unit">
-                    <Input placeholder="mg / µl / etc." />
+                    <Select allowClear placeholder="Select unit" options={[
+                      { label: 'mg', value: 'mg' },
+                      { label: 'g', value: 'g' },
+                      { label: 'µl', value: 'µl' },
+                      { label: 'ml', value: 'ml' },
+                      { label: 'pieces', value: 'pieces' },
+                    ]} />
                   </Form.Item>
                   <Form.Item label="Yield (ng/µl)" name="yield_ng_ul">
                     <InputNumber min={0} style={{ width: '100%' }} />
@@ -423,7 +443,13 @@ export default function ExtractionRunDetailPage() {
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item label="Unit" name="input_quantity_unit">
-            <Input />
+            <Select allowClear options={[
+              { label: 'mg', value: 'mg' },
+              { label: 'g', value: 'g' },
+              { label: 'µl', value: 'µl' },
+              { label: 'ml', value: 'ml' },
+              { label: 'pieces', value: 'pieces' },
+            ]} />
           </Form.Item>
           <Form.Item label="Yield (ng/µl)" name="yield_ng_ul">
             <InputNumber min={0} style={{ width: '100%' }} />

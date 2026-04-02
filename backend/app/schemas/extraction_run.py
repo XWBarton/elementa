@@ -110,6 +110,7 @@ class ExtractionRunRead(BaseModel):
     elution_volume_ul: Optional[float] = None
     protocol_notes: Optional[str] = None
     notes: Optional[str] = None
+    is_locked: bool = False
     created_at: datetime
     sample_count: int = 0
 

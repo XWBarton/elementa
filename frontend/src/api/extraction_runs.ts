@@ -56,3 +56,13 @@ export async function getAllExtractions(): Promise<Extraction[]> {
   const { data } = await client.get('/extraction-runs/all-extractions')
   return data
 }
+
+export async function lockExtractionRun(id: number): Promise<ExtractionRun> {
+  const { data } = await client.post(`/extraction-runs/${id}/lock`)
+  return data
+}
+
+export async function unlockExtractionRun(id: number): Promise<ExtractionRun> {
+  const { data } = await client.post(`/extraction-runs/${id}/unlock`)
+  return data
+}

@@ -56,3 +56,13 @@ export async function bulkAddPCRSamples(runId: number, specimenCodes: string[]):
   const { data } = await client.post(`/pcr-runs/${runId}/samples/bulk`, { specimen_codes: specimenCodes })
   return data
 }
+
+export async function lockPCRRun(id: number): Promise<PCRRun> {
+  const { data } = await client.post(`/pcr-runs/${id}/lock`)
+  return data
+}
+
+export async function unlockPCRRun(id: number): Promise<PCRRun> {
+  const { data } = await client.post(`/pcr-runs/${id}/unlock`)
+  return data
+}

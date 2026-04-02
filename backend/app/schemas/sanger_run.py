@@ -98,6 +98,7 @@ class SangerRunRead(BaseModel):
     service_provider: Optional[str] = None
     order_id: Optional[str] = None
     notes: Optional[str] = None
+    is_locked: bool = False
     created_at: datetime
     sample_count: int = 0
 

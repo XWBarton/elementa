@@ -1,9 +1,10 @@
 from typing import List, Optional, Tuple
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.pcr_run import PCRRun, PCRSample
+from app.models.primer import PrimerPair
 from app.schemas.pcr_run import PCRRunCreate, PCRRunUpdate, PCRSampleCreate, PCRSampleUpdate
 
 
@@ -11,8 +12,14 @@ def _run_query(db: Session):
     return db.query(PCRRun).options(
         joinedload(PCRRun.operator),
         joinedload(PCRRun.protocol),
+        selectinload(PCRRun.primer_pairs).joinedload(PrimerPair.forward_primer),
+        selectinload(PCRRun.primer_pairs).joinedload(PrimerPair.reverse_primer),
         joinedload(PCRRun.samples).joinedload(PCRSample.extraction),
     )
+
+
+def _set_primer_pairs(db: Session, run: PCRRun, ids: List[int]) -> None:
+    run.primer_pairs = db.query(PrimerPair).filter(PrimerPair.id.in_(ids)).all()
 
 
 def get_runs(
@@ -40,16 +47,23 @@ def get_run(db: Session, run_id: int) -> Optional[PCRRun]:
 
 
 def create_run(db: Session, data: PCRRunCreate) -> PCRRun:
-    run = PCRRun(**data.model_dump())
+    payload = data.model_dump(exclude={"primer_pair_ids"})
+    run = PCRRun(**payload)
     db.add(run)
+    db.flush()
+    if data.primer_pair_ids:
+        _set_primer_pairs(db, run, data.primer_pair_ids)
     db.commit()
     db.refresh(run)
     return get_run(db, run.id)
 
 
 def update_run(db: Session, obj: PCRRun, data: PCRRunUpdate) -> PCRRun:
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True, exclude={"primer_pair_ids"})
+    for key, value in update_data.items():
         setattr(obj, key, value)
+    if "primer_pair_ids" in data.model_fields_set:
+        _set_primer_pairs(db, obj, data.primer_pair_ids or [])
     db.commit()
     db.refresh(obj)
     return get_run(db, obj.id)

@@ -15,11 +15,12 @@ import {
   DeleteOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
+  LinkOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useCreateProtocol, useProtocol, useUpdateProtocol } from '../hooks/useProtocols'
-import type { ProtocolCreate, ProtocolStep } from '../types'
+import type { ProtocolCreate, ProtocolReference, ProtocolStep } from '../types'
 
 const CATEGORY_OPTIONS = [
   { label: 'Extraction', value: 'extraction' },
@@ -113,11 +114,13 @@ export default function ProtocolFormPage() {
       form.setFieldsValue({
         ...protocol,
         materials: protocol.materials?.join('\n') ?? '',
+        references: protocol.references ?? [],
       })
     } else if (importedProtocol && !isEdit) {
       form.setFieldsValue({
         ...importedProtocol,
         materials: importedProtocol.materials?.join('\n') ?? '',
+        references: importedProtocol.references ?? [],
       })
     }
   }, [protocol, isEdit, importedProtocol, form])
@@ -130,6 +133,9 @@ export default function ProtocolFormPage() {
       ? (values.materials as string).split('\n').map((m) => m.trim()).filter(Boolean)
       : []
 
+    const references = ((values.references as ProtocolReference[] | undefined) ?? [])
+      .filter(r => r?.title || r?.url)
+
     const payload: ProtocolCreate = {
       name: values.name as string,
       category: values.category as ProtocolCreate['category'],
@@ -138,6 +144,7 @@ export default function ProtocolFormPage() {
       notes: values.notes as string | undefined,
       steps,
       materials,
+      references,
     }
 
     if (isEdit) {
@@ -282,6 +289,34 @@ export default function ProtocolFormPage() {
           >
             <Input.TextArea rows={4} placeholder="e.g.&#10;DNeasy Plant Mini Kit&#10;1.5 mL microtubes&#10;Liquid nitrogen" />
           </Form.Item>
+
+          {/* References */}
+          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>References</Typography.Text>
+          <Form.List name="references">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map((field) => (
+                  <Space key={field.key} align="baseline" style={{ display: 'flex', marginBottom: 8 }}>
+                    <Form.Item name={[field.name, 'title']} style={{ marginBottom: 0, minWidth: 200 }}>
+                      <Input placeholder="Title (e.g. Smith et al. 2020)" style={{ width: 240 }} />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'url']} style={{ marginBottom: 0 }}>
+                      <Input placeholder="https://doi.org/..." style={{ width: 320 }} prefix={<LinkOutlined />} />
+                    </Form.Item>
+                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
+                  </Space>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={() => add({ title: '', url: '' })}
+                  icon={<PlusOutlined />}
+                  style={{ marginBottom: 16 }}
+                >
+                  Add Reference
+                </Button>
+              </>
+            )}
+          </Form.List>
 
           <Form.Item label="Notes" name="notes">
             <Input.TextArea rows={3} />

@@ -7,6 +7,8 @@ import {
   deleteSangerSample,
   getSangerRun,
   getSangerRuns,
+  lockSangerRun,
+  unlockSangerRun,
   updateSangerRun,
   updateSangerSample,
 } from '../api/sanger_runs'
@@ -74,5 +76,21 @@ export function useBulkAddSangerSamples(runId: number) {
   return useMutation({
     mutationFn: (codes: string[]) => bulkAddSangerSamples(runId, codes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sanger_runs', runId] }),
+  })
+}
+
+export function useLockSangerRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: lockSangerRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sanger_runs'] }),
+  })
+}
+
+export function useUnlockSangerRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: unlockSangerRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sanger_runs'] }),
   })
 }

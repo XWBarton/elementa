@@ -54,6 +54,12 @@ def migrate_db():
         ("sanger_runs", "primer_id", "ALTER TABLE sanger_runs ADD COLUMN primer_id INTEGER REFERENCES primers(id)"),
         ("library_prep_runs", "primer_pair_id", "ALTER TABLE library_prep_runs ADD COLUMN primer_pair_id INTEGER REFERENCES primer_pair_records(id)"),
         ("ngs_runs", "storage_host", "ALTER TABLE ngs_runs ADD COLUMN storage_host VARCHAR(300)"),
+        ("extraction_runs", "is_locked", "ALTER TABLE extraction_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
+        ("pcr_runs", "is_locked", "ALTER TABLE pcr_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
+        ("sanger_runs", "is_locked", "ALTER TABLE sanger_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
+        ("library_prep_runs", "is_locked", "ALTER TABLE library_prep_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
+        ("ngs_runs", "is_locked", "ALTER TABLE ngs_runs ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0"),
+        ("protocols", "references", "ALTER TABLE protocols ADD COLUMN references TEXT"),
     ]
     with engine.connect() as conn:
         for table, column, sql in migrations:

@@ -8,6 +8,8 @@ import {
   getAllExtractions,
   getExtractionRun,
   getExtractionRuns,
+  lockExtractionRun,
+  unlockExtractionRun,
   updateExtractionRun,
   updateExtractionSample,
 } from '../api/extraction_runs'
@@ -84,5 +86,21 @@ export function useDeleteExtractionSample(runId: number) {
   return useMutation({
     mutationFn: (sampleId: number) => deleteExtractionSample(runId, sampleId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['extraction_runs', runId] }),
+  })
+}
+
+export function useLockExtractionRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: lockExtractionRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extraction_runs'] }),
+  })
+}
+
+export function useUnlockExtractionRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: unlockExtractionRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extraction_runs'] }),
   })
 }

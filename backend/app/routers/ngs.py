@@ -58,7 +58,35 @@ def update(run_id: int, data: NGSRunUpdate, db: Session = Depends(get_db), curre
         raise HTTPException(status_code=404, detail="NGS run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return update_ngs_run(db, obj, data)
+
+
+@router.post("/{run_id}/lock", response_model=NGSRunRead)
+def lock_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    obj = get_ngs_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="NGS run not found")
+    if not current_user.is_admin and obj.operator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorised to lock this run")
+    obj.is_locked = True
+    db.commit()
+    db.refresh(obj)
+    return NGSRunRead.model_validate(obj)
+
+
+@router.post("/{run_id}/unlock", response_model=NGSRunRead)
+def unlock_run(run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    obj = get_ngs_run(db, run_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="NGS run not found")
+    if not current_user.is_admin and obj.operator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorised to unlock this run")
+    obj.is_locked = False
+    db.commit()
+    db.refresh(obj)
+    return NGSRunRead.model_validate(obj)
 
 
 @router.delete("/{run_id}")
@@ -66,6 +94,8 @@ def delete(run_id: int, db: Session = Depends(get_db), _=Depends(require_admin))
     obj = get_ngs_run(db, run_id)
     if not obj:
         raise HTTPException(status_code=404, detail="NGS run not found")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     delete_ngs_run(db, obj)
     return {"detail": "Deleted"}
 
@@ -77,6 +107,8 @@ def add_lib(run_id: int, data: NGSRunLibraryCreate, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="NGS run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return add_library(db, run_id, data)
 
 
@@ -87,6 +119,8 @@ def add_libs_bulk(run_id: int, payload: BulkSpecimenCodePayload, db: Session = D
         raise HTTPException(status_code=404, detail="NGS run not found")
     if not _has_access(obj, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if obj.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return add_libraries_bulk(db, run_id, payload.specimen_codes)
 
 
@@ -97,6 +131,8 @@ def update_lib(run_id: int, lib_id: int, data: NGSRunLibraryUpdate, db: Session 
         raise HTTPException(status_code=404, detail="Library not found")
     if not _has_access(lib.ngs_run, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if lib.ngs_run.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     return update_library(db, lib, data)
 
 
@@ -107,6 +143,8 @@ def delete_lib(run_id: int, lib_id: int, db: Session = Depends(get_db), current_
         raise HTTPException(status_code=404, detail="Library not found")
     if not _has_access(lib.ngs_run, current_user):
         raise HTTPException(status_code=403, detail="Access restricted")
+    if lib.ngs_run.is_locked:
+        raise HTTPException(status_code=423, detail="Run is locked")
     delete_library(db, lib)
     return {"detail": "Deleted"}
 

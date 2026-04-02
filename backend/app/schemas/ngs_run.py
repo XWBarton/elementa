@@ -101,6 +101,7 @@ class NGSRunRead(BaseModel):
     q30_percent: Optional[float] = None
     mean_read_length_bp: Optional[int] = None
     notes: Optional[str] = None
+    is_locked: bool = False
     libraries: List[NGSRunLibraryRead] = []
     created_at: datetime
 

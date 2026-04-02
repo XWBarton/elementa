@@ -14,6 +14,7 @@ class ProtocolCreate(BaseModel):
     description: Optional[str] = None
     steps: Optional[List[Dict[str, Any]]] = None
     materials: Optional[List[str]] = None
+    references: Optional[List[Dict[str, str]]] = None
     notes: Optional[str] = None
 
 
@@ -24,6 +25,7 @@ class ProtocolUpdate(BaseModel):
     description: Optional[str] = None
     steps: Optional[List[Dict[str, Any]]] = None
     materials: Optional[List[str]] = None
+    references: Optional[List[Dict[str, str]]] = None
     notes: Optional[str] = None
 
 
@@ -35,6 +37,7 @@ class ProtocolRead(BaseModel):
     description: Optional[str] = None
     steps: Optional[List[Dict[str, Any]]] = None
     materials: Optional[List[str]] = None
+    references: Optional[List[Dict[str, str]]] = None
     notes: Optional[str] = None
     created_by_id: Optional[int] = None
     created_by: Optional[UserRead] = None
@@ -53,6 +56,16 @@ class ProtocolRead(BaseModel):
     @field_validator("materials", mode="before")
     @classmethod
     def parse_materials(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def parse_references(cls, v):
         if isinstance(v, str):
             try:
                 return json.loads(v)

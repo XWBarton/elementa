@@ -196,6 +196,26 @@ def _build_typst(protocol: ProtocolRead) -> str:
         if protocol.notes else ""
     )
 
+    # References section
+    references_section = ""
+    if protocol.references:
+        ref_lines = []
+        for ref in protocol.references:
+            title = _esc(ref.get("title", ""))
+            url = _esc(ref.get("url", ""))
+            if title and url:
+                ref_lines.append(f'  - #link("{url}")[{title}] #text(fill: luma(150), size: 9pt)[({url})]')
+            elif title:
+                ref_lines.append(f'  - {title}')
+            elif url:
+                ref_lines.append(f'  - #link("{url}")[{url}]')
+        if ref_lines:
+            references_section = (
+                f'\n#v(8pt)\n#line(length: 100%, stroke: 0.5pt + luma(200))\n'
+                f'#v(12pt)\n#text(size: 13pt, weight: "bold")[References]\n'
+                f'#v(6pt)\n' + "\n".join(ref_lines) + "\n"
+            )
+
     return f"""#set document(title: "{name_esc}", author: "{author}")
 #set page(
   paper: "a4",
@@ -254,6 +274,7 @@ def _build_typst(protocol: ProtocolRead) -> str:
 #v(10pt)
 {steps_content}
 {notes_section}
+{references_section}
 """
 
 

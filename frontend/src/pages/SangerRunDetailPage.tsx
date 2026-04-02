@@ -1,10 +1,10 @@
 import {
   Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography, Upload, message,
 } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined, SearchOutlined, UnorderedListOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined, EyeOutlined, InboxOutlined, LockOutlined, SearchOutlined, UnlockOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { useAddSangerSample, useBulkAddSangerSamples, useDeleteSangerRun, useDeleteSangerSample, useSangerRun, useUpdateSangerSample } from '../hooks/useSangerRuns'
+import { useAddSangerSample, useBulkAddSangerSamples, useDeleteSangerRun, useDeleteSangerSample, useLockSangerRun, useSangerRun, useUnlockSangerRun, useUpdateSangerSample } from '../hooks/useSangerRuns'
 import { useAllPCRSamples } from '../hooks/usePCRRuns'
 import { PCRSample, SangerSample, SangerSampleCreate, SangerSampleUpdate } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -115,6 +115,8 @@ export default function SangerRunDetailPage() {
   const deleteSample = useDeleteSangerSample(runId)
   const bulkAdd = useBulkAddSangerSamples(runId)
   const deleteRun = useDeleteSangerRun()
+  const lockRun = useLockSangerRun()
+  const unlockRun = useUnlockSangerRun()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editSample, setEditSample] = useState<SangerSample | null>(null)
@@ -279,7 +281,7 @@ export default function SangerRunDetailPage() {
       title: 'Actions', key: 'actions',
       render: (_: unknown, record: SangerSample) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => { setEditSample(record); editForm.setFieldsValue(record) }} />
+          <Button type="link" icon={<EditOutlined />} disabled={run.is_locked} onClick={() => { setEditSample(record); editForm.setFieldsValue(record) }} />
           <Popconfirm
             title="Delete?"
             description={(() => {
@@ -290,7 +292,7 @@ export default function SangerRunDetailPage() {
             })()}
             onConfirm={() => deleteSample.mutateAsync(record.id).then(() => message.success('Deleted'))}
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} disabled={run.is_locked} />
           </Popconfirm>
         </Space>
       ),
@@ -350,10 +352,18 @@ export default function SangerRunDetailPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>Sanger Run #{run.id}</Typography.Title>
+        <Space>
+          <Typography.Title level={3} style={{ margin: 0 }}>Sanger Run #{run.id}</Typography.Title>
+          {run.is_locked && <Tag icon={<LockOutlined />} color="warning">Locked</Tag>}
+        </Space>
         <Space>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>Export CSV</Button>
-          <Button onClick={() => navigate(`/sanger-runs/${runId}/edit`)}>Edit Run</Button>
+          <Button disabled={run.is_locked} onClick={() => navigate(`/sanger-runs/${runId}/edit`)}>Edit Run</Button>
+          {(user?.is_admin || run.operator_id === user?.id) && (
+            run.is_locked
+              ? <Button icon={<UnlockOutlined />} onClick={() => unlockRun.mutateAsync(runId).then(() => message.success('Run unlocked'))} loading={unlockRun.isPending}>Unlock</Button>
+              : <Button icon={<LockOutlined />} onClick={() => lockRun.mutateAsync(runId).then(() => message.success('Run locked'))} loading={lockRun.isPending}>Lock</Button>
+          )}
           {user?.is_admin && (
             <Popconfirm
               title="Delete this run?"
@@ -369,7 +379,7 @@ export default function SangerRunDetailPage() {
               })()}
               onConfirm={() => deleteRun.mutateAsync(runId).then(() => { message.success('Deleted'); navigate('/sanger-runs') })}
             >
-              <Button danger>Delete Run</Button>
+              <Button danger disabled={run.is_locked}>Delete Run</Button>
             </Popconfirm>
           )}
         </Space>
@@ -400,8 +410,8 @@ export default function SangerRunDetailPage() {
         title="Samples"
         extra={
           <Space>
-            <Button icon={<UnorderedListOutlined />} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddModalOpen(true)}>Add Sample</Button>
+            <Button icon={<UnorderedListOutlined />} disabled={run.is_locked} onClick={() => setBulkModalOpen(true)}>Bulk Add</Button>
+            <Button type="primary" icon={<PlusOutlined />} disabled={run.is_locked} onClick={() => setAddModalOpen(true)}>Add Sample</Button>
           </Space>
         }
       >

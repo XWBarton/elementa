@@ -7,6 +7,8 @@ import {
   deleteNGSRun,
   getNGSRun,
   getNGSRuns,
+  lockNGSRun,
+  unlockNGSRun,
   updateNGSLibrary,
   updateNGSRun,
 } from '../api/ngs'
@@ -74,5 +76,21 @@ export function useBulkAddNGSLibraries(runId: number) {
   return useMutation({
     mutationFn: (codes: string[]) => bulkAddNGSLibraries(runId, codes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ngs_runs', runId] }),
+  })
+}
+
+export function useLockNGSRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: lockNGSRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ngs_runs'] }),
+  })
+}
+
+export function useUnlockNGSRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: unlockNGSRun,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ngs_runs'] }),
   })
 }

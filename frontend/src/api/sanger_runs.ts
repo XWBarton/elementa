@@ -51,3 +51,13 @@ export async function bulkAddSangerSamples(runId: number, specimenCodes: string[
   const { data } = await client.post(`/sanger-runs/${runId}/samples/bulk`, { specimen_codes: specimenCodes })
   return data
 }
+
+export async function lockSangerRun(id: number): Promise<SangerRun> {
+  const { data } = await client.post(`/sanger-runs/${id}/lock`)
+  return data
+}
+
+export async function unlockSangerRun(id: number): Promise<SangerRun> {
+  const { data } = await client.post(`/sanger-runs/${id}/unlock`)
+  return data
+}

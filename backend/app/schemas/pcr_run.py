@@ -53,7 +53,7 @@ class PCRRunCreate(BaseModel):
     project_id: int
     protocol_id: Optional[int] = None
     target_region: Optional[str] = None
-    primer_pair_id: Optional[int] = None
+    primer_pair_ids: Optional[List[int]] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     annealing_temp_c: Optional[float] = None
@@ -69,7 +69,7 @@ class PCRRunUpdate(BaseModel):
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
     target_region: Optional[str] = None
-    primer_pair_id: Optional[int] = None
+    primer_pair_ids: Optional[List[int]] = None
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     annealing_temp_c: Optional[float] = None
@@ -89,8 +89,7 @@ class PCRRunRead(BaseModel):
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
     target_region: Optional[str] = None
-    primer_pair_id: Optional[int] = None
-    primer_pair: Optional[PrimerPairRead] = None
+    primer_pairs: List[PrimerPairRead] = []
     primer_f: Optional[str] = None
     primer_r: Optional[str] = None
     annealing_temp_c: Optional[float] = None
@@ -98,6 +97,7 @@ class PCRRunRead(BaseModel):
     polymerase: Optional[str] = None
     amplicon_size_bp: Optional[int] = None
     notes: Optional[str] = None
+    is_locked: bool = False
     created_at: datetime
     sample_count: int = 0
 
