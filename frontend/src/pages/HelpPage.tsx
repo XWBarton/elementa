@@ -136,9 +136,11 @@ export default function HelpPage() {
                 size="small"
                 items={[
                   { title: 'Go to Extractions', description: 'Click Extractions in the sidebar (under Workflows), then + New Run.' },
-                  { title: 'Fill in run details', description: 'Project and operator are required. Also set the date, extraction kit, protocol, and container type (plate or strip tubes).' },
-                  { title: 'Add samples', description: 'Paste specimen codes from Tessera into the bulk paste box, or add them one at a time. Each sample records elution volume, yield (ng/µL), and QC status.' },
+                  { title: 'Fill in run details', description: 'Project and operator are required (operator autofills to the logged-in user). Also set the date, extraction kit, protocol, and container type (plate or strip tubes).' },
+                  { title: 'Additional projects', description: 'Optionally tag the run to extra projects beyond the primary one — useful when a run spans multiple collections.' },
+                  { title: 'Add samples', description: 'Paste specimen codes from Tessera into the bulk paste box, or add them one at a time. Each sample records input quantity (with unit: mg, g, µl, ml, or pieces), elution volume, yield (ng/µL), and QC status.' },
                   { title: 'Save', description: 'The run is now listed and linked back to Tessera automatically.' },
+                  { title: 'Lock the run', description: 'Once data entry is complete, click Lock to prevent further edits or sample deletions. Use Unlock to reopen.' },
                 ]}
               />
             </Card>
@@ -161,8 +163,11 @@ export default function HelpPage() {
                 size="small"
                 items={[
                   { title: 'Go to PCR', description: 'Click PCR in the sidebar, then + New Run.' },
-                  { title: 'Set run parameters', description: 'Project and operator are required. Also set date, primers, annealing temperature, cycle count, and protocol.' },
+                  { title: 'Set run parameters', description: 'Project and operator are required (operator autofills). Also set date, annealing temperature, cycle count, and protocol.' },
+                  { title: 'Primer pairs', description: 'Attach one or more primer pairs from the library — supports multiplexed runs with multiple primer pairs per batch.' },
+                  { title: 'Additional projects', description: 'Optionally tag to extra projects beyond the primary.' },
                   { title: 'Add samples', description: 'Select the source extraction for each sample. Record band size (bp) and QC status (Pass / Fail / Weak).' },
+                  { title: 'Lock the run', description: 'Click Lock on the run detail page to freeze the record once data entry is complete.' },
                 ]}
               />
             </Card>
@@ -185,8 +190,10 @@ export default function HelpPage() {
                 size="small"
                 items={[
                   { title: 'Go to Sanger', description: 'Click Sanger in the sidebar, then + New Run.' },
-                  { title: 'Set run details', description: 'Project and operator are required. Also set sequencing facility, submission date, primer, and direction.' },
+                  { title: 'Set run details', description: 'Project and operator are required (operator autofills). Also set sequencing facility, submission date, primer, and direction.' },
+                  { title: 'Additional projects', description: 'Optionally tag to extra projects beyond the primary.' },
                   { title: 'Add samples', description: 'Select the source PCR sample. Once results are back, paste or upload the sequence and set QC status.' },
+                  { title: 'Lock the run', description: 'Click Lock once sequences are finalised to prevent further changes.' },
                 ]}
               />
             </Card>
@@ -209,8 +216,11 @@ export default function HelpPage() {
                 size="small"
                 items={[
                   { title: 'Go to Library Prep', description: 'Click Library Prep in the sidebar, then + New Run.' },
-                  { title: 'Set run details', description: 'Project and operator are required. Also set date, library kit, target region, and protocol.' },
+                  { title: 'Set run details', description: 'Project and operator are required (operator autofills). Also set date, library kit, and protocol.' },
+                  { title: 'Primer pairs', description: 'Attach one or more primer pairs — supports multiplexed library prep runs.' },
+                  { title: 'Additional projects', description: 'Optionally tag to extra projects beyond the primary.' },
                   { title: 'Add preps', description: 'Select source extractions. Record index/barcode, concentration (nM), and QC status.' },
+                  { title: 'Lock the run', description: 'Click Lock once prep data is finalised.' },
                 ]}
               />
             </Card>
@@ -233,8 +243,10 @@ export default function HelpPage() {
                 size="small"
                 items={[
                   { title: 'Go to NGS Runs', description: 'Click NGS Runs in the sidebar, then + New Run.' },
-                  { title: 'Set run details', description: 'Project, operator, and platform are required. Also set run date, flow cell ID, and instrument.' },
+                  { title: 'Set run details', description: 'Project, operator (autofills), and platform are required. Also set run date, flow cell ID, instrument, and storage host/path for raw data.' },
+                  { title: 'Additional projects', description: 'Optionally tag to extra projects beyond the primary.' },
                   { title: 'Add libraries', description: 'Select prepared libraries from previous library prep runs. Record reads (millions) and QC status once data is returned.' },
+                  { title: 'Lock the run', description: 'Click Lock to freeze the run record once sequencing output is confirmed.' },
                 ]}
               />
             </Card>
@@ -250,6 +262,21 @@ export default function HelpPage() {
         </>
       ),
       sections: [
+        {
+          key: 'run-locking',
+          searchText: 'lock unlock run freeze prevent edit delete protect finalise close run locked badge warning admin operator',
+          node: (
+            <Card style={{ marginBottom: 16 }}>
+              <Title level={5} style={{ marginTop: 0 }}>
+                <LockOutlined style={{ marginRight: 8 }} />
+                Run locking
+              </Title>
+              <Paragraph style={{ marginBottom: 0 }}>
+                Any run can be locked once data entry is complete. Open the run detail page and click <Text strong>Lock</Text> — the run will display a <Text strong>Locked</Text> badge and all edit, add-sample, and delete-sample actions will be disabled. The operator who created the run or any admin can lock or unlock a run. Deleting a locked run requires admin access.
+              </Paragraph>
+            </Card>
+          ),
+        },
         {
           key: 'filtering',
           searchText: 'filter by project operator dropdown narrow results list extractions PCR sanger library prep NGS runs search find specific runs',
@@ -290,7 +317,7 @@ export default function HelpPage() {
                 Protocols
               </Title>
               <Paragraph style={{ marginBottom: 0 }}>
-                Store lab protocols as structured documents. Go to <Text strong>Protocols</Text> in the sidebar (under Reference) to create, edit, and download protocols as PDFs. Protocols can be attached to runs so the exact method used is recorded alongside the data. Protocols support a <Text strong>Thermocycling</Text> step type with structured fields for cycle count, denaturation, annealing, extension temperatures and times — these render as a formatted table in the PDF. Protocols can also be exported as importable text files (<Text code>.txt</Text>) for sharing or backup.
+                Store lab protocols as structured documents. Go to <Text strong>Protocols</Text> in the sidebar (under Reference) to create, edit, and download protocols as PDFs. Protocols can be attached to runs so the exact method used is recorded alongside the data. Protocols support a <Text strong>Thermocycling</Text> step type with structured fields for cycle count, denaturation, annealing, extension temperatures and times — these render as a formatted table in the PDF. Protocols also support <Text strong>References</Text> (title + URL links), which appear in the detail view, PDF, and text export. Protocols can be exported as importable text files (<Text code>.txt</Text>) for sharing or backup.
               </Paragraph>
             </Card>
           ),
@@ -403,7 +430,10 @@ export default function HelpPage() {
               <li>Use the project and operator filters on any workflow list page to narrow down results.</li>
               <li>Use the bulk paste box on extraction runs to add many specimen codes at once — one per line.</li>
               <li>Samples within a run show their QC status as a colour-coded tag: <Tag color="green">Pass</Tag> <Tag color="orange">Weak</Tag> <Tag color="red">Fail</Tag>.</li>
+              <li>The operator field autofills to the logged-in user when creating a new run — change it if entering data on behalf of someone else.</li>
               <li>Protocols attached to runs are version-snapshotted — editing a protocol later won't change what was recorded on past runs.</li>
+              <li>Lock runs once data entry is complete to protect them from accidental edits.</li>
+              <li>Tag runs to additional projects when specimens from multiple collections are processed together.</li>
               <li>Export a CSV backup before any server update.</li>
             </ul>
           ),
