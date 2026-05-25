@@ -71,6 +71,7 @@ class LibraryPrepRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: int
     project_id: int
+    additional_project_ids: List[int] = []
     protocol_id: Optional[int] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
@@ -85,6 +86,7 @@ class LibraryPrepRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
+    additional_project_ids: Optional[List[int]] = None
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_pair_ids: Optional[List[int]] = None
@@ -102,6 +104,7 @@ class LibraryPrepRunRead(BaseModel):
     protocol: Optional[ProtocolRead] = None
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
+    additional_projects: List[ProjectRead] = []
     kit: Optional[str] = None
     target_region: Optional[str] = None
     primer_pairs: List[PrimerPairRead] = []

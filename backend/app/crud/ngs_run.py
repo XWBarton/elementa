@@ -3,8 +3,10 @@ from typing import Optional, Tuple, List
 
 from sqlalchemy.orm import Session, joinedload
 
+from sqlalchemy import or_
 from app.models.ngs_run import NGSRun, NGSRunLibrary
 from app.models.library_prep_run import LibraryPrep
+from app.models.project import Project
 from app.schemas.ngs_run import NGSRunCreate, NGSRunUpdate
 
 
@@ -12,6 +14,7 @@ def _base_query(db: Session):
     return db.query(NGSRun).options(
         joinedload(NGSRun.operator),
         joinedload(NGSRun.protocol),
+        joinedload(NGSRun.additional_projects),
         joinedload(NGSRun.libraries).joinedload(NGSRunLibrary.library_prep).joinedload(LibraryPrep.extraction),
     )
 
@@ -34,7 +37,12 @@ def get_ngs_runs(
     if date_to:
         q = q.filter(NGSRun.date <= date_to)
     if project_id is not None:
-        q = q.filter(NGSRun.project_id == project_id)
+        q = q.filter(
+            or_(
+                NGSRun.project_id == project_id,
+                NGSRun.additional_projects.any(Project.id == project_id),
+            )
+        ).distinct()
     if operator_id is not None:
         q = q.filter(NGSRun.operator_id == operator_id)
     total = q.count()
@@ -47,14 +55,17 @@ def get_ngs_run(db: Session, run_id: int) -> Optional[NGSRun]:
 
 
 def create_ngs_run(db: Session, data: NGSRunCreate) -> NGSRun:
+    additional_ids = data.additional_project_ids or []
     libraries_data = data.libraries
-    run_data = data.model_dump(exclude={"libraries"})
+    run_data = data.model_dump(exclude={"libraries", "additional_project_ids"})
     run = NGSRun(**run_data)
     db.add(run)
     db.flush()
     for lib in libraries_data:
         junction = NGSRunLibrary(ngs_run_id=run.id, **lib.model_dump())
         db.add(junction)
+    if additional_ids:
+        run.additional_projects = db.query(Project).filter(Project.id.in_(additional_ids)).all()
     db.commit()
     db.refresh(run)
     return get_ngs_run(db, run.id)
@@ -63,6 +74,7 @@ def create_ngs_run(db: Session, data: NGSRunCreate) -> NGSRun:
 def update_ngs_run(db: Session, obj: NGSRun, data: NGSRunUpdate) -> NGSRun:
     update_data = data.model_dump(exclude_unset=True)
     libraries_data = update_data.pop("libraries", None)
+    additional_ids = update_data.pop("additional_project_ids", None)
     for key, value in update_data.items():
         setattr(obj, key, value)
     if libraries_data is not None:
@@ -71,6 +83,11 @@ def update_ngs_run(db: Session, obj: NGSRun, data: NGSRunUpdate) -> NGSRun:
         for lib in libraries_data:
             junction = NGSRunLibrary(ngs_run_id=obj.id, **lib)
             db.add(junction)
+    if additional_ids is not None:
+        obj.additional_projects = (
+            db.query(Project).filter(Project.id.in_(additional_ids)).all()
+            if additional_ids else []
+        )
     db.commit()
     db.refresh(obj)
     return get_ngs_run(db, obj.id)

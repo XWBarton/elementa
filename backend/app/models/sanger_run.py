@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -14,6 +14,14 @@ if TYPE_CHECKING:
     from app.models.protocol import Protocol
     from app.models.project import Project
     from app.models.primer import Primer
+
+
+sanger_run_additional_projects = Table(
+    "sanger_run_additional_projects",
+    Base.metadata,
+    Column("sanger_run_id", Integer, ForeignKey("sanger_runs.id", ondelete="CASCADE"), primary_key=True),
+    Column("project_id", Integer, ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class SangerRun(Base):
@@ -39,6 +47,9 @@ class SangerRun(Base):
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
+    additional_projects: Mapped[List["Project"]] = relationship(
+        "Project", secondary=sanger_run_additional_projects, lazy="select"
+    )
     primer_record: Mapped[Optional["Primer"]] = relationship("Primer", foreign_keys=[primer_id])
     samples: Mapped[list["SangerSample"]] = relationship(
         "SangerSample", back_populates="run", cascade="all, delete-orphan"

@@ -47,6 +47,7 @@ class NGSRunCreate(BaseModel):
     platform: str
     operator_id: int
     project_id: int
+    additional_project_ids: List[int] = []
     instrument: Optional[str] = None
     run_id: Optional[str] = None
     date: Optional[date] = None
@@ -70,6 +71,7 @@ class NGSRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
+    additional_project_ids: Optional[List[int]] = None
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     storage_host: Optional[str] = None
@@ -93,6 +95,7 @@ class NGSRunRead(BaseModel):
     protocol: Optional[ProtocolRead] = None
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
+    additional_projects: List[ProjectRead] = []
     flow_cell_id: Optional[str] = None
     reagent_kit: Optional[str] = None
     storage_host: Optional[str] = None

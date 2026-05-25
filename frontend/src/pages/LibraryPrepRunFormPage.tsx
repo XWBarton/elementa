@@ -15,6 +15,7 @@ export default function LibraryPrepRunFormPage() {
   const isEdit = !!id
   const navigate = useNavigate()
   const [form] = Form.useForm()
+  const watchedProjectId: number | undefined = Form.useWatch('project_id', form)
 
   const { user } = useAuth()
   const { data: run } = useLibraryPrepRun(isEdit ? Number(id) : 0)
@@ -44,6 +45,7 @@ export default function LibraryPrepRunFormPage() {
         ...run,
         run_date: run.run_date ? dayjs(run.run_date) : null,
         primer_pair_ids: (run.primer_pairs ?? []).map(p => p.id),
+        additional_project_ids: run.additional_projects?.map(p => p.id) ?? [],
       })
     }
   }, [run, isEdit, form])
@@ -76,6 +78,19 @@ export default function LibraryPrepRunFormPage() {
           <Form.Item label="Project" name="project_id" rules={[{ required: true, message: 'Project is required' }]}>
             <Select showSearch optionFilterProp="label" placeholder="Select project"
               options={projects?.map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []} />
+          </Form.Item>
+          <Form.Item
+            label="Also in projects"
+            name="additional_project_ids"
+            help="Optionally tag this run to additional projects for cross-project filtering"
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Select additional projects…"
+              optionFilterProp="label"
+              options={projects?.filter(p => p.id !== watchedProjectId).map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []}
+            />
           </Form.Item>
           <Form.Item label="Protocol (SOP)" name="protocol_id">
             <Select

@@ -157,6 +157,7 @@ export interface ExtractionRun {
   protocol?: Protocol
   project_id?: number
   project?: Project
+  additional_projects?: Project[]
   kit?: string
   extraction_type?: ExtractionType
   container_type?: string
@@ -173,6 +174,7 @@ export interface ExtractionRunCreate {
   run_date?: string
   operator_id: number
   project_id: number
+  additional_project_ids?: number[]
   protocol_id?: number
   kit?: string
   extraction_type?: ExtractionType
@@ -221,6 +223,7 @@ export interface PCRRun {
   protocol?: Protocol
   project_id?: number
   project?: Project
+  additional_projects?: Project[]
   target_region?: string
   primer_f?: string
   primer_r?: string
@@ -240,6 +243,7 @@ export interface PCRRunCreate {
   run_date?: string
   operator_id: number
   project_id: number
+  additional_project_ids?: number[]
   protocol_id?: number
   target_region?: string
   primer_f?: string
@@ -294,6 +298,7 @@ export interface SangerRun {
   protocol?: Protocol
   project_id?: number
   project?: Project
+  additional_projects?: Project[]
   primer?: string
   primer_id?: number
   primer_record?: Primer
@@ -311,6 +316,7 @@ export interface SangerRunCreate {
   run_date?: string
   operator_id: number
   project_id: number
+  additional_project_ids?: number[]
   protocol_id?: number
   primer?: string
   primer_id?: number
@@ -369,6 +375,7 @@ export interface LibraryPrepRun {
   protocol?: Protocol
   project_id?: number
   project?: Project
+  additional_projects?: Project[]
   kit?: string
   target_region?: string
   primer_f?: string
@@ -385,6 +392,7 @@ export interface LibraryPrepRunCreate {
   run_date?: string
   operator_id: number
   project_id: number
+  additional_project_ids?: number[]
   protocol_id?: number
   kit?: string
   target_region?: string
@@ -430,6 +438,7 @@ export interface NGSRun {
   protocol_id?: number
   project_id?: number
   project?: Project
+  additional_projects?: Project[]
   protocol?: Protocol
   flow_cell_id?: string
   reagent_kit?: string
@@ -448,6 +457,7 @@ export interface NGSRunCreate {
   platform: NGSPlatform
   operator_id: number
   project_id: number
+  additional_project_ids?: number[]
   instrument?: string
   run_id?: string
   date?: string

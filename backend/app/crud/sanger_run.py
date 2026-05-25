@@ -3,8 +3,10 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from sqlalchemy import or_
 from app.models.sanger_run import SangerRun, SangerSample
 from app.models.pcr_run import PCRSample
+from app.models.project import Project
 from app.schemas.sanger_run import SangerRunCreate, SangerRunUpdate, SangerSampleCreate, SangerSampleUpdate
 
 
@@ -12,6 +14,7 @@ def _run_query(db: Session):
     return db.query(SangerRun).options(
         joinedload(SangerRun.operator),
         joinedload(SangerRun.protocol),
+        joinedload(SangerRun.additional_projects),
         joinedload(SangerRun.samples).joinedload(SangerSample.pcr_sample).joinedload(PCRSample.extraction),
     )
 
@@ -26,8 +29,12 @@ def get_runs(
     q = _run_query(db)
     cq = db.query(func.count(SangerRun.id))
     if project_id is not None:
-        q = q.filter(SangerRun.project_id == project_id)
-        cq = cq.filter(SangerRun.project_id == project_id)
+        proj_filter = or_(
+            SangerRun.project_id == project_id,
+            SangerRun.additional_projects.any(Project.id == project_id),
+        )
+        q = q.filter(proj_filter).distinct()
+        cq = cq.filter(proj_filter)
     if operator_id is not None:
         q = q.filter(SangerRun.operator_id == operator_id)
         cq = cq.filter(SangerRun.operator_id == operator_id)
@@ -41,7 +48,10 @@ def get_run(db: Session, run_id: int) -> Optional[SangerRun]:
 
 
 def create_run(db: Session, data: SangerRunCreate) -> SangerRun:
-    run = SangerRun(**data.model_dump())
+    additional_ids = data.additional_project_ids or []
+    run = SangerRun(**data.model_dump(exclude={"additional_project_ids"}))
+    if additional_ids:
+        run.additional_projects = db.query(Project).filter(Project.id.in_(additional_ids)).all()
     db.add(run)
     db.commit()
     db.refresh(run)
@@ -49,8 +59,14 @@ def create_run(db: Session, data: SangerRunCreate) -> SangerRun:
 
 
 def update_run(db: Session, obj: SangerRun, data: SangerRunUpdate) -> SangerRun:
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_dict = data.model_dump(exclude_unset=True, exclude={"additional_project_ids"})
+    for key, value in update_dict.items():
         setattr(obj, key, value)
+    if data.additional_project_ids is not None:
+        obj.additional_projects = (
+            db.query(Project).filter(Project.id.in_(data.additional_project_ids)).all()
+            if data.additional_project_ids else []
+        )
     db.commit()
     db.refresh(obj)
     return get_run(db, obj.id)

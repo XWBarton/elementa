@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -12,6 +12,14 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.protocol import Protocol
     from app.models.project import Project
+
+
+extraction_run_additional_projects = Table(
+    "extraction_run_additional_projects",
+    Base.metadata,
+    Column("extraction_run_id", Integer, ForeignKey("extraction_runs.id", ondelete="CASCADE"), primary_key=True),
+    Column("project_id", Integer, ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class ExtractionRun(Base):
@@ -37,6 +45,9 @@ class ExtractionRun(Base):
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
+    additional_projects: Mapped[List["Project"]] = relationship(
+        "Project", secondary=extraction_run_additional_projects, lazy="select"
+    )
     samples: Mapped[list["Extraction"]] = relationship(
         "Extraction", back_populates="run", cascade="all, delete-orphan"
     )

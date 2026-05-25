@@ -17,6 +17,7 @@ export default function NGSRunFormPage() {
   const isEdit = !!id
   const navigate = useNavigate()
   const [form] = Form.useForm()
+  const watchedProjectId: number | undefined = Form.useWatch('project_id', form)
 
   const { user } = useAuth()
   const { data: existing } = useNGSRun(isEdit ? Number(id) : 0)
@@ -38,6 +39,7 @@ export default function NGSRunFormPage() {
       form.setFieldsValue({
         ...existing,
         libraries: existing.libraries.map((l) => ({ library_prep_id: l.library_prep_id, specimen_code: l.specimen_code, sample_name: l.sample_name })),
+        additional_project_ids: existing.additional_projects?.map(p => p.id) ?? [],
       })
     }
   }, [existing, form])
@@ -126,6 +128,19 @@ export default function NGSRunFormPage() {
               </Form.Item>
             </Col>
           </Row>
+          <Form.Item
+            label="Also in projects"
+            name="additional_project_ids"
+            help="Optionally tag this run to additional projects for cross-project filtering"
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Select additional projects…"
+              optionFilterProp="label"
+              options={projects?.filter(p => p.id !== watchedProjectId).map(p => ({ label: `${p.code} — ${p.name}`, value: p.id })) ?? []}
+            />
+          </Form.Item>
           <Row gutter={16}>
             <Col span={6}>
               <Form.Item name="flow_cell_id" label="Flow Cell ID">

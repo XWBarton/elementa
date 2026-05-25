@@ -17,6 +17,13 @@ if TYPE_CHECKING:
     from app.models.primer import PrimerPair
 
 
+library_prep_run_additional_projects = Table(
+    "library_prep_run_additional_projects",
+    Base.metadata,
+    Column("library_prep_run_id", Integer, ForeignKey("library_prep_runs.id", ondelete="CASCADE"), primary_key=True),
+    Column("project_id", Integer, ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True),
+)
+
 library_prep_run_primer_pairs = Table(
     "library_prep_run_primer_pairs",
     Base.metadata,
@@ -48,6 +55,9 @@ class LibraryPrepRun(Base):
     operator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[operator_id])
     protocol: Mapped[Optional["Protocol"]] = relationship("Protocol", foreign_keys=[protocol_id])
     project: Mapped[Optional["Project"]] = relationship("Project", foreign_keys=[project_id])
+    additional_projects: Mapped[List["Project"]] = relationship(
+        "Project", secondary=library_prep_run_additional_projects, lazy="select"
+    )
     primer_pair: Mapped[Optional["PrimerPair"]] = relationship("PrimerPair", foreign_keys=[primer_pair_id])
     primer_pairs: Mapped[List["PrimerPair"]] = relationship(
         "PrimerPair", secondary=library_prep_run_primer_pairs, lazy="select"

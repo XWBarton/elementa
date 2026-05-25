@@ -51,6 +51,7 @@ class PCRRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: int
     project_id: int
+    additional_project_ids: List[int] = []
     protocol_id: Optional[int] = None
     target_region: Optional[str] = None
     primer_pair_ids: Optional[List[int]] = None
@@ -68,6 +69,7 @@ class PCRRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
+    additional_project_ids: Optional[List[int]] = None
     target_region: Optional[str] = None
     primer_pair_ids: Optional[List[int]] = None
     primer_f: Optional[str] = None
@@ -88,6 +90,7 @@ class PCRRunRead(BaseModel):
     protocol: Optional[ProtocolRead] = None
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
+    additional_projects: List[ProjectRead] = []
     target_region: Optional[str] = None
     primer_pairs: List[PrimerPairRead] = []
     primer_f: Optional[str] = None

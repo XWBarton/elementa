@@ -3,8 +3,10 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from sqlalchemy import or_
 from app.models.pcr_run import PCRRun, PCRSample
 from app.models.primer import PrimerPair
+from app.models.project import Project
 from app.schemas.pcr_run import PCRRunCreate, PCRRunUpdate, PCRSampleCreate, PCRSampleUpdate
 
 
@@ -12,6 +14,7 @@ def _run_query(db: Session):
     return db.query(PCRRun).options(
         joinedload(PCRRun.operator),
         joinedload(PCRRun.protocol),
+        joinedload(PCRRun.additional_projects),
         selectinload(PCRRun.primer_pairs).joinedload(PrimerPair.forward_primer),
         selectinload(PCRRun.primer_pairs).joinedload(PrimerPair.reverse_primer),
         joinedload(PCRRun.samples).joinedload(PCRSample.extraction),
@@ -32,8 +35,12 @@ def get_runs(
     q = _run_query(db)
     cq = db.query(func.count(PCRRun.id))
     if project_id is not None:
-        q = q.filter(PCRRun.project_id == project_id)
-        cq = cq.filter(PCRRun.project_id == project_id)
+        proj_filter = or_(
+            PCRRun.project_id == project_id,
+            PCRRun.additional_projects.any(Project.id == project_id),
+        )
+        q = q.filter(proj_filter).distinct()
+        cq = cq.filter(proj_filter)
     if operator_id is not None:
         q = q.filter(PCRRun.operator_id == operator_id)
         cq = cq.filter(PCRRun.operator_id == operator_id)
@@ -47,23 +54,31 @@ def get_run(db: Session, run_id: int) -> Optional[PCRRun]:
 
 
 def create_run(db: Session, data: PCRRunCreate) -> PCRRun:
-    payload = data.model_dump(exclude={"primer_pair_ids"})
+    additional_ids = data.additional_project_ids or []
+    payload = data.model_dump(exclude={"primer_pair_ids", "additional_project_ids"})
     run = PCRRun(**payload)
     db.add(run)
     db.flush()
     if data.primer_pair_ids:
         _set_primer_pairs(db, run, data.primer_pair_ids)
+    if additional_ids:
+        run.additional_projects = db.query(Project).filter(Project.id.in_(additional_ids)).all()
     db.commit()
     db.refresh(run)
     return get_run(db, run.id)
 
 
 def update_run(db: Session, obj: PCRRun, data: PCRRunUpdate) -> PCRRun:
-    update_data = data.model_dump(exclude_unset=True, exclude={"primer_pair_ids"})
+    update_data = data.model_dump(exclude_unset=True, exclude={"primer_pair_ids", "additional_project_ids"})
     for key, value in update_data.items():
         setattr(obj, key, value)
     if "primer_pair_ids" in data.model_fields_set:
         _set_primer_pairs(db, obj, data.primer_pair_ids or [])
+    if data.additional_project_ids is not None:
+        obj.additional_projects = (
+            db.query(Project).filter(Project.id.in_(data.additional_project_ids)).all()
+            if data.additional_project_ids else []
+        )
     db.commit()
     db.refresh(obj)
     return get_run(db, obj.id)

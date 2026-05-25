@@ -60,6 +60,7 @@ class SangerRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: int
     project_id: int
+    additional_project_ids: List[int] = []
     protocol_id: Optional[int] = None
     primer_id: Optional[int] = None
     primer: Optional[str] = None
@@ -74,6 +75,7 @@ class SangerRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
+    additional_project_ids: Optional[List[int]] = None
     primer_id: Optional[int] = None
     primer: Optional[str] = None
     direction: Optional[str] = None
@@ -91,6 +93,7 @@ class SangerRunRead(BaseModel):
     protocol: Optional[ProtocolRead] = None
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
+    additional_projects: List[ProjectRead] = []
     primer_id: Optional[int] = None
     primer_record: Optional[PrimerRead] = None
     primer: Optional[str] = None

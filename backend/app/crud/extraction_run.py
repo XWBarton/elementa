@@ -3,7 +3,9 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from sqlalchemy import or_
 from app.models.extraction_run import Extraction, ExtractionRun
+from app.models.project import Project
 from app.schemas.extraction_run import (
     ExtractionCreate,
     ExtractionRunCreate,
@@ -16,6 +18,7 @@ def _run_query(db: Session):
     return db.query(ExtractionRun).options(
         joinedload(ExtractionRun.operator),
         joinedload(ExtractionRun.protocol),
+        joinedload(ExtractionRun.additional_projects),
         joinedload(ExtractionRun.samples),
     )
 
@@ -30,8 +33,12 @@ def get_runs(
     q = _run_query(db)
     cq = db.query(func.count(ExtractionRun.id))
     if project_id is not None:
-        q = q.filter(ExtractionRun.project_id == project_id)
-        cq = cq.filter(ExtractionRun.project_id == project_id)
+        proj_filter = or_(
+            ExtractionRun.project_id == project_id,
+            ExtractionRun.additional_projects.any(Project.id == project_id),
+        )
+        q = q.filter(proj_filter).distinct()
+        cq = cq.filter(proj_filter)
     if operator_id is not None:
         q = q.filter(ExtractionRun.operator_id == operator_id)
         cq = cq.filter(ExtractionRun.operator_id == operator_id)
@@ -45,7 +52,10 @@ def get_run(db: Session, run_id: int) -> Optional[ExtractionRun]:
 
 
 def create_run(db: Session, data: ExtractionRunCreate) -> ExtractionRun:
-    run = ExtractionRun(**data.model_dump())
+    additional_ids = data.additional_project_ids or []
+    run = ExtractionRun(**data.model_dump(exclude={"additional_project_ids"}))
+    if additional_ids:
+        run.additional_projects = db.query(Project).filter(Project.id.in_(additional_ids)).all()
     db.add(run)
     db.commit()
     db.refresh(run)
@@ -53,8 +63,14 @@ def create_run(db: Session, data: ExtractionRunCreate) -> ExtractionRun:
 
 
 def update_run(db: Session, obj: ExtractionRun, data: ExtractionRunUpdate) -> ExtractionRun:
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_dict = data.model_dump(exclude_unset=True, exclude={"additional_project_ids"})
+    for key, value in update_dict.items():
         setattr(obj, key, value)
+    if data.additional_project_ids is not None:
+        obj.additional_projects = (
+            db.query(Project).filter(Project.id.in_(data.additional_project_ids)).all()
+            if data.additional_project_ids else []
+        )
     db.commit()
     db.refresh(obj)
     return get_run(db, obj.id)

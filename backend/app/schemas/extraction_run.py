@@ -73,6 +73,7 @@ class ExtractionRunCreate(BaseModel):
     run_date: Optional[date] = None
     operator_id: int
     project_id: int
+    additional_project_ids: List[int] = []
     protocol_id: Optional[int] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
@@ -87,6 +88,7 @@ class ExtractionRunUpdate(BaseModel):
     operator_id: Optional[int] = None
     protocol_id: Optional[int] = None
     project_id: Optional[int] = None
+    additional_project_ids: Optional[List[int]] = None
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None
@@ -104,6 +106,7 @@ class ExtractionRunRead(BaseModel):
     protocol: Optional[ProtocolRead] = None
     project_id: Optional[int] = None
     project: Optional[ProjectRead] = None
+    additional_projects: List[ProjectRead] = []
     kit: Optional[str] = None
     extraction_type: Optional[str] = None
     container_type: Optional[str] = None
